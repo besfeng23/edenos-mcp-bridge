@@ -1,0 +1,53 @@
+{
+  "name": "edenos-mcp-bridge",
+  "version": "1.0.0",
+  "description": "EdenOS MCP Bridge - Comprehensive Model Context Protocol server with GCP, Firebase, and development tools",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc && esbuild src/server.ts --bundle --platform=node --target=node18 --format=esm --outfile=dist/server.js",
+    "build:ui": "vite build",
+    "dev:ui": "vite",
+    "preview:ui": "vite preview",
+    "start": "node dist/server.js",
+    "deploy": "npm run build && npm run build:ui && firebase deploy",
+    "deploy:hosting": "npm run build:ui && firebase deploy --only hosting",
+    "deploy:functions": "npm run build && firebase deploy --only functions",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "gcp",
+    "firebase",
+    "firestore",
+    "bigquery",
+    "github-actions",
+    "cloud-run",
+    "terraform",
+    "devops"
+  ],
+  "author": "EdenOS Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "esbuild": "^0.19.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "lucide-react": "^0.294.0",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.0.0"
+  }
+}
