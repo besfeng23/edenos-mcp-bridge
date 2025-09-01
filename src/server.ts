@@ -28,6 +28,10 @@ const PORT = process.env.PORT || 8080;
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['https://mcpmaster-web-app.web.app'];
 
+// MCP Configuration
+const MCP_ACTION_CURSOR_DISPATCH = process.env.MCP_ACTION_CURSOR_DISPATCH || 'cursor.dispatch';
+const MCP_ENV_TAG = process.env.MCP_ENV_TAG || 'mcpmaster';
+
 // Logging utility
 function log(level: string, message: string, meta?: any) {
   const timestamp = new Date().toISOString();
@@ -94,7 +98,7 @@ const allTools: Tool[] = [
 // Create MCP server
 const server = new Server(
   {
-    name: 'edenos-mcp-bridge',
+    name: `edenos-mcp-bridge-${MCP_ENV_TAG}`,
     version: '1.0.0',
   },
   {
@@ -372,9 +376,13 @@ mcp_rate_limit_hits_total ${Array.from(rateLimitMap.values()).reduce((sum, limit
     if (path === '/') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
-        name: 'EdenOS MCP Bridge',
+        name: `EdenOS MCP Bridge (${MCP_ENV_TAG})`,
         version: '1.0.0',
         status: 'running',
+        mcp: {
+          actionCursorDispatch: MCP_ACTION_CURSOR_DISPATCH,
+          envTag: MCP_ENV_TAG
+        },
         endpoints: {
           health: '/health',
           metrics: '/metrics',
@@ -395,7 +403,12 @@ mcp_rate_limit_hits_total ${Array.from(rateLimitMap.values()).reduce((sum, limit
 // Start server
 async function main() {
   try {
-    log('info', 'Starting EdenOS MCP Bridge');
+    log('info', 'Starting EdenOS MCP Bridge', { 
+      mcpActionCursorDispatch: MCP_ACTION_CURSOR_DISPATCH,
+      mcpEnvTag: MCP_ENV_TAG,
+      port: PORT,
+      logLevel: LOG_LEVEL
+    });
     
     // Start HTTP server for health checks
     const httpServer = createHttpServer();
