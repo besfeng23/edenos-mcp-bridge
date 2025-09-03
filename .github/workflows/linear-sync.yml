@@ -1,0 +1,174 @@
+name: Linear Sync
+
+on:
+  issues:
+    types: [opened, reopened]
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  sync-to-linear:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' || github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Create Linear Issue for GitHub Issue
+        if: github.event_name == 'issues'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_KEY: ${{ vars.LINEAR_TEAM_KEY || 'ENG' }}
+          GH_EVENT: ${{ toJson(github.event) }}
+        run: |
+          echo "$GH_EVENT" > event.json
+          
+          TITLE=$(jq -r '.issue.title' event.json)
+          BODY=$(jq -r '.issue.body // ""' event.json)
+          URL=$(jq -r '.issue.html_url' event.json)
+          NUMBER=$(jq -r '.issue.number' event.json)
+          LABELS=$(jq -r '[.issue.labels[].name] | join(", ")' event.json)
+          ASSIGNEES=$(jq -r '[.issue.assignees[].login] | join(", ")' event.json)
+          CREATED_AT=$(jq -r '.issue.created_at' event.json)
+          
+          DESC="**Source:** GitHub Issue #${NUMBER}
+          **URL:** ${URL}
+          **Created:** ${CREATED_AT}
+          **Labels:** ${LABELS}
+          **Assignees:** ${ASSIGNEES}
+          
+          ---
+          
+          ${BODY}"
+
+          # Get team ID
+          TEAM_QUERY='query{teams{nodes{id key}}}'
+          TEAM_JSON=$(curl -sS https://api.linear.app/graphql \
+             -H "Content-Type: application/json" \
+             -H "Authorization: ${LINEAR_API_KEY}" \
+             -d "{\"query\":\"$TEAM_QUERY\"}")
+          TEAM_ID=$(echo "$TEAM_JSON" | jq -r --arg k "$LINEAR_TEAM_KEY" '.data.teams.nodes[] | select(.key==$k) | .id')
+
+          if [[ -z "$TEAM_ID" || "$TEAM_ID" == "null" ]]; then
+            echo "❌ Could not resolve Linear team key '$LINEAR_TEAM_KEY'"
+            echo "Available teams:"
+            echo "$TEAM_JSON" | jq -r '.data.teams.nodes[] | "  - \(.key) (\(.id))"'
+            exit 1
+          fi
+
+          # Create Linear issue
+          MUTATION='mutation($input:IssueCreateInput!){issueCreate(input:$input){success issue{identifier url} error{message}}}'
+          DATA=$(jq -n --arg q "$MUTATION" --arg teamId "$TEAM_ID" --arg t "$TITLE" --arg d "$DESC" \
+             '{query:$q, variables:{input:{teamId:$teamId,title:$t,description:$d}}}')
+
+          RESPONSE=$(curl -sS https://api.linear.app/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: ${LINEAR_API_KEY}" \
+            -d "$DATA")
+
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.data.issueCreate.success')
+          ERROR_MSG=$(echo "$RESPONSE" | jq -r '.data.issueCreate.error.message // ""')
+          IDENTIFIER=$(echo "$RESPONSE" | jq -r '.data.issueCreate.issue.identifier // ""')
+          LINEAR_URL=$(echo "$RESPONSE" | jq -r '.data.issueCreate.issue.url // ""')
+
+          if [[ "$SUCCESS" == "true" ]]; then
+            echo "✅ Created Linear issue $IDENTIFIER → $LINEAR_URL"
+            
+            # Post comment back to GitHub
+            COMMENT="🔄 **Mirrored to Linear**
+
+            Linear Issue: [$IDENTIFIER]($LINEAR_URL)
+
+            This issue has been automatically synced from GitHub to Linear for tracking."
+            
+            gh issue comment $NUMBER -b "$COMMENT"
+            echo "💬 Posted comment back to GitHub issue #$NUMBER"
+          else
+            echo "❌ Failed to create Linear issue: $ERROR_MSG"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Create Linear Issue for GitHub PR
+        if: github.event_name == 'pull_request'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_KEY: ${{ vars.LINEAR_TEAM_KEY || 'ENG' }}
+          GH_EVENT: ${{ toJson(github.event) }}
+        run: |
+          echo "$GH_EVENT" > event.json
+          
+          TITLE=$(jq -r '.pull_request.title' event.json)
+          BODY=$(jq -r '.pull_request.body // ""' event.json)
+          URL=$(jq -r '.pull_request.html_url' event.json)
+          NUMBER=$(jq -r '.pull_request.number' event.json)
+          LABELS=$(jq -r '[.pull_request.labels[].name] | join(", ")' event.json)
+          AUTHOR=$(jq -r '.pull_request.user.login' event.json)
+          CREATED_AT=$(jq -r '.pull_request.created_at' event.json)
+          
+          DESC="**Source:** GitHub PR #${NUMBER}
+          **URL:** ${URL}
+          **Created:** ${CREATED_AT}
+          **Author:** ${AUTHOR}
+          **Labels:** ${LABELS}
+          
+          ---
+          
+          ${BODY}"
+
+          # Get team ID
+          TEAM_QUERY='query{teams{nodes{id key}}}'
+          TEAM_JSON=$(curl -sS https://api.linear.app/graphql \
+             -H "Content-Type: application/json" \
+             -H "Authorization: ${LINEAR_API_KEY}" \
+             -d "{\"query\":\"$TEAM_QUERY\"}")
+          TEAM_ID=$(echo "$TEAM_JSON" | jq -r --arg k "$LINEAR_TEAM_KEY" '.data.teams.nodes[] | select(.key==$k) | .id')
+
+          if [[ -z "$TEAM_ID" || "$TEAM_ID" == "null" ]]; then
+            echo "❌ Could not resolve Linear team key '$LINEAR_TEAM_KEY'"
+            echo "Available teams:"
+            echo "$TEAM_JSON" | jq -r '.data.teams.nodes[] | "  - \(.key) (\(.id))"'
+            exit 1
+          fi
+
+          # Create Linear issue
+          MUTATION='mutation($input:IssueCreateInput!){issueCreate(input:$input){success issue{identifier url} error{message}}}'
+          DATA=$(jq -n --arg q "$MUTATION" --arg teamId "$TEAM_ID" --arg t "[PR] $TITLE" --arg d "$DESC" \
+             '{query:$q, variables:{input:{teamId:$teamId,title:$t,description:$d}}}')
+
+          RESPONSE=$(curl -sS https://api.linear.app/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: ${LINEAR_API_KEY}" \
+            -d "$DATA")
+
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.data.issueCreate.success')
+          ERROR_MSG=$(echo "$RESPONSE" | jq -r '.data.issueCreate.error.message // ""')
+          IDENTIFIER=$(echo "$RESPONSE" | jq -r '.data.issueCreate.issue.identifier // ""')
+          LINEAR_URL=$(echo "$RESPONSE" | jq -r '.data.issueCreate.issue.url // ""')
+
+          if [[ "$SUCCESS" == "true" ]]; then
+            echo "✅ Created Linear issue $IDENTIFIER → $LINEAR_URL"
+            
+            # Post comment back to GitHub
+            COMMENT="🔄 **Mirrored to Linear**
+
+            Linear Issue: [$IDENTIFIER]($LINEAR_URL)
+
+            This PR has been automatically synced from GitHub to Linear for tracking."
+            
+            gh pr comment $NUMBER -b "$COMMENT"
+            echo "💬 Posted comment back to GitHub PR #$NUMBER"
+          else
+            echo "❌ Failed to create Linear issue: $ERROR_MSG"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
