@@ -1,0 +1,2 @@
+Write-Host "Current directory: $(Get-Location)" -ForegroundColor Gray; if (Test-Path ".env") { Write-Host "Found .env file" -ForegroundColor Gray; Get-Content ".env" | ForEach-Object { if ($_ -match "^([^#][^=]+)=(.*)$") { $key = $matches[1].Trim(); $value = $matches[2].Trim(); [Environment]::SetEnvironmentVariable($key, $value, "Process"); Write-Host "Loaded: $key = $value" -ForegroundColor Gray } } } else { Write-Host "No .env file found" -ForegroundColor Red }; Write-Host "LINEAR_API_KEY: $([Environment]::GetEnvironmentVariable(
+LINEAR_API_KEY))" -ForegroundColor Cyan
