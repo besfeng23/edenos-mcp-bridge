@@ -1,249 +1,219 @@
-# 🎭 EdenOS MCP Bridge - Ultimate MCP Server
+# 🚀 EdenOS MCP Bridge
 
-A comprehensive, production-ready Model Context Protocol (MCP) server that integrates **15 major services** with **144+ tools** and **sci-fi "wow" features** that make normal people think you're a wizard.
+**Ultimate MCP Server with 15+ Service Integrations**
 
-## 🚀 **Quick Start**
+A comprehensive Model Context Protocol (MCP) bridge that connects 15+ popular services including Notion, Linear, GitHub, Firebase, GCP, Figma, Zapier, and more. Built with Express.js, React, and deployed on Vercel.
 
-### **Deploy to Vercel (Recommended)**
+## ✨ Features
 
-1. **Fork this repository** to your GitHub account
-2. **Connect to Vercel**:
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your forked repository
-   - Vercel will automatically detect the configuration
+### 🎯 Backend Features
+- **MCP Bridge Server** with 15+ service integrations
+- **Express.js API** with WebSocket support
+- **Fun Features**: Live Ops Theater, Holographic Memory Graph
+- **Production Hardening**: Health checks, metrics, monitoring
+- **Security**: CORS, rate limiting, authentication
 
-3. **Set Environment Variables** in Vercel dashboard:
+### 🎨 Frontend Features
+- **React Control Panel** with command palette
+- **Wow Control** with sci-fi UI
+- **Live Ops Theater** with real-time updates
+- **Holographic Memory Graph** with 3D visualization
+- **Audit Cinema** with event streaming
+- **Multi-workspace support** for all services
+
+### 🔧 Service Integrations
+- **Notion** - Note-taking and documentation
+- **Linear** - Project management and issue tracking
+- **GitHub** - Code repository management
+- **Firebase** - Backend-as-a-Service
+- **GCP** - Google Cloud Platform services
+- **Figma** - Design collaboration
+- **Zapier** - Workflow automation
+- **Bnd** - Business process management
+- **Saviynt** - Identity governance
+- **Anthropic** - AI services
+- **Neon** - Serverless PostgreSQL
+- **DeepMind** - AI research tools
+- **OpenAI** - AI language models
+- **Box** - File storage and collaboration
+
+## 🌐 Live Deployment
+
+**Production URL**: https://edenos-mcp-bridge-4cf6pi7jx-joven-ongs-projects-83d1122c.vercel.app
+
+### Available Endpoints
+- **Main App**: `/`
+- **Health Check**: `/health`
+- **Tools API**: `/tools`
+- **Logs API**: `/logs`
+- **Control Panel**: `/control-panel`
+- **Wow Control**: `/wow-control`
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Git
+
+### Local Development
+
+1. **Clone the repository**
    ```bash
-   # Required for basic functionality
-   BRIDGE_ADMIN_TOKEN=your-secure-admin-token
-   
-   # Add your service API keys as needed
-   NOTION_API_KEY=your-notion-key
-   LINEAR_API_KEY=your-linear-key
-   GITHUB_TOKEN=your-github-token
-   # ... (see env.example for complete list)
+   git clone https://github.com/besfeng23/edenos-mcp-bridge.git
+   cd edenos-mcp-bridge
    ```
 
-4. **Deploy** - Vercel will automatically build and deploy!
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### **Local Development**
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/edenos-mcp-bridge.git
-cd edenos-mcp-bridge
+4. **Access the application**
+   - Main app: http://localhost:3000
+   - Control Panel: http://localhost:3000/control-panel
+   - Wow Control: http://localhost:3000/wow-control
 
-# Install dependencies
-npm install
+### Environment Variables
 
-# Copy environment file
-cp env.example .env
-# Edit .env with your API keys
+Create a `.env` file in the root directory:
 
-# Start development server
-npm run dev
-```
-
-## 🎯 **What You Get**
-
-### **15 Major Service Integrations**
-- **Notion** - Knowledge management and documentation
-- **Linear** - Project management and issue tracking
-- **GitHub** - Code management and collaboration
-- **Firebase** - Cloud services and backend
-- **GCP** - Cloud infrastructure and services
-- **Figma** - Design management and collaboration
-- **Zapier** - Automation workflows and integrations
-- **Bnd** - Blockchain and DeFi operations
-- **Saviynt** - Identity governance and access management
-- **Anthropic** - AI language models and services
-- **Neon** - Serverless Postgres database
-- **DeepMind** - AI research and experimentation
-- **OpenAI** - GPT models and services
-- **Box** - Enterprise file storage and collaboration
-- **Fun Features** - Sci-fi magic for normal people
-
-### **144+ MCP Tools**
-Each service includes comprehensive tools for:
-- **CRUD operations** (Create, Read, Update, Delete)
-- **Search and discovery**
-- **User and permission management**
-- **Advanced features** specific to each service
-
-### **Wow Control Center**
-Beautiful, interactive web interfaces for each service with:
-- **Dark sci-fi theme** with animations
-- **One-click operations** for complex tasks
-- **Visual feedback** and real-time updates
-- **Responsive design** for all devices
-
-## 🔧 **API Endpoints**
-
-### **Core MCP Endpoints**
-- `GET /` - Service information and features
-- `GET /health` - Health check and status
-- `GET /metrics` - Performance metrics
-- `POST /tools` - Execute MCP tools
-
-### **Web Interfaces**
-- `/web/control-panel/` - React control panel
-- `/web/wow-control/` - Sci-fi control center
-- `/web/live-ops/` - Live operations theater
-- `/web/memgraph/` - Holographic memory graph
-- `/web/audit-cinema/` - Audit cinema
-
-## 🛠️ **Configuration**
-
-### **Environment Variables**
-Copy `env.example` to `.env` and configure:
-
-```bash
-# Server Configuration
-NODE_ENV=production
+```env
+NODE_ENV=development
 PORT=3000
-BRIDGE_ADMIN_TOKEN=your-secure-token
-
-# Service API Keys (add as needed)
-NOTION_API_KEY=your-notion-key
-LINEAR_API_KEY=your-linear-key
-GITHUB_TOKEN=your-github-token
-# ... (see env.example for complete list)
+# Add your service API keys here
+NOTION_API_KEY=your_notion_key
+LINEAR_API_KEY=your_linear_key
+GITHUB_TOKEN=your_github_token
+# ... other service keys
 ```
 
-### **Service Configuration**
-Each service can be configured with:
-- **API keys** for authentication
-- **Base URLs** for custom endpoints
-- **Project IDs** for multi-tenant services
-- **Default models** for AI services
+## 📁 Project Structure
 
-## 🎭 **Fun Features**
+```
+edenos-mcp-bridge/
+├── src/                    # Source code
+│   ├── server.ts          # Main server file
+│   ├── tools/             # MCP tool implementations
+│   └── ui/                # UI components
+├── web/                   # Frontend applications
+│   ├── control-panel/     # React control panel
+│   ├── wow-control/       # Sci-fi UI components
+│   └── live-ops/          # Live operations theater
+├── plugins/               # Fun plugins and features
+├── aws/                   # AWS deployment scripts
+├── dist/                  # Built files
+├── server.js              # Vercel server entry point
+├── vercel.json            # Vercel configuration
+└── package.json           # Dependencies and scripts
+```
 
-### **Live Ops Theater**
-Real-time monitoring dashboard with:
-- **Service status** indicators
-- **Performance metrics** graphs
-- **Live updates** via WebSocket
-- **Operational theater** for demos
+## 🛠️ Available Scripts
 
-### **Holographic Memory Graph**
-3D visualization of:
-- **Service relationships**
-- **Data flow** patterns
-- **Usage statistics**
-- **Interactive exploration**
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm start` - Start production server
+- `npm run vercel-dev` - Start Vercel development
+- `npm run aws-deploy` - Deploy to AWS
+- `npm run aws-deploy-win` - Deploy to AWS (Windows)
 
-### **Chaos Monkey**
-Controlled chaos for testing:
-- **Random service** failures
-- **Load testing** capabilities
-- **Resilience** validation
-- **Recovery** testing
+## 🚀 Deployment
 
-### **AI Doppelgänger**
-AI-powered suggestions for:
-- **Next actions** based on context
-- **Optimization** recommendations
-- **Workflow** improvements
-- **Smart** automation
-
-## 📊 **Production Features**
-
-### **Security**
-- **CORS** configuration for web access
-- **Environment variable** protection
-- **API key** validation and rotation
-- **Rate limiting** and abuse prevention
-
-### **Monitoring**
-- **Health checks** and status endpoints
-- **Performance metrics** collection
-- **Error logging** and reporting
-- **Uptime** monitoring
-
-### **Scalability**
-- **Modular architecture** for easy extension
-- **Type-safe** schemas throughout
-- **Error handling** and recovery
-- **Resource optimization**
-
-## 🚀 **Deployment Options**
-
-### **Vercel (Recommended)**
-- **Zero-config** deployment
-- **Automatic scaling**
-- **Global CDN**
-- **Environment variable** management
-
-### **Docker**
+### Vercel (Recommended)
 ```bash
-# Build image
-docker build -t edenos-mcp-bridge .
-
-# Run container
-docker run -p 3000:3000 --env-file .env edenos-mcp-bridge
+vercel --prod
 ```
 
-### **Cloud Run**
+### AWS
 ```bash
-# Deploy to Google Cloud Run
-gcloud run deploy edenos-mcp-bridge \
-  --source . \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated
+# Setup AWS credentials first
+npm run aws-setup-win
+
+# Deploy to AWS
+npm run aws-deploy-win
 ```
 
-## 🎯 **Use Cases**
+### Manual Deployment
+1. Build the project: `npm run build`
+2. Deploy the `dist/` folder to your hosting provider
+3. Configure environment variables
 
-### **For Developers**
-- **Unified API** for all major services
-- **Type-safe** tool execution
-- **Easy integration** with existing apps
-- **Comprehensive** error handling
+## 🔧 API Usage
 
-### **For Normal People**
-- **Beautiful interfaces** that look like sci-fi
-- **One-click operations** for complex tasks
-- **Visual feedback** and animations
-- **Easy-to-understand** workflows
+### Health Check
+```bash
+curl https://your-domain.com/health
+```
 
-### **For Business**
-- **Enterprise-grade** security
-- **Scalable architecture**
-- **Comprehensive** service coverage
-- **Professional** presentation capabilities
+### Execute Tool
+```bash
+curl -X POST https://your-domain.com/tools \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "notion.create_page", "args": {"title": "Test Page"}}'
+```
 
-## 📈 **Statistics**
+### Get Logs
+```bash
+curl https://your-domain.com/logs?limit=100
+```
 
-- **15 major service integrations**
-- **144+ MCP tools** across all services
-- **Complete MCP protocol** support
-- **Production-ready** architecture
-- **Beautiful workspace UIs** for each service
-- **"Wow" factor features** that impress everyone
+## 🎨 Frontend Components
 
-## 🤝 **Contributing**
+### Control Panel
+- React-based admin interface
+- Command palette (Cmd/Ctrl+K)
+- Real-time monitoring
+- Multi-workspace support
 
-1. **Fork** the repository
-2. **Create** a feature branch
-3. **Make** your changes
-4. **Test** thoroughly
-5. **Submit** a pull request
+### Wow Control
+- Sci-fi themed UI
+- Holographic displays
+- Futuristic workspace management
+- Interactive 3D elements
 
-## 📄 **License**
+### Live Ops Theater
+- Real-time event streaming
+- Live monitoring dashboard
+- Interactive controls
+- Performance metrics
 
-MIT License - see [LICENSE](LICENSE) file for details.
+## 🔒 Security
 
-## 🎭 **Support**
+- CORS protection
+- Rate limiting
+- Input validation
+- Environment variable protection
+- Secure API endpoints
 
-- **GitHub Issues** for bug reports
-- **Discussions** for feature requests
-- **Documentation** in the `/docs` folder
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with ❤️ by the EdenOS Team
+- Powered by Vercel
+- Inspired by the Model Context Protocol community
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/besfeng23/edenos-mcp-bridge/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/besfeng23/edenos-mcp-bridge/discussions)
+- **Documentation**: [Wiki](https://github.com/besfeng23/edenos-mcp-bridge/wiki)
 
 ---
 
-**Built with ❤️ by the EdenOS Team**
-
-*"Making MCP servers that make normal people think you're a wizard!"* ✨
+**Made with ❤️ by EdenOS Team**
