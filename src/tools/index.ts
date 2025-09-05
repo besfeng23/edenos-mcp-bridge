@@ -15,6 +15,7 @@ export * from './anthropic';
 export * from './neon';
 export * from './deepmind';
 export * from './openai';
+export * from './box';
 
 // Tool registry for easy lookup
 export const toolRegistry = {
@@ -187,7 +188,27 @@ export const toolRegistry = {
   'openai.create-image-variation': { handler: 'openai', description: 'Create image variation' },
   'openai.create-transcription': { handler: 'openai', description: 'Create transcription' },
   'openai.create-translation': { handler: 'openai', description: 'Create translation' },
-  'openai.get-usage-stats': { handler: 'openai', description: 'Get usage statistics' }
+  'openai.get-usage-stats': { handler: 'openai', description: 'Get usage statistics' },
+
+  // Box tools
+  'box.get-file': { handler: 'box', description: 'Get file by ID' },
+  'box.get-folder': { handler: 'box', description: 'Get folder by ID' },
+  'box.list-folder-contents': { handler: 'box', description: 'List folder contents' },
+  'box.create-folder': { handler: 'box', description: 'Create folder' },
+  'box.update-folder': { handler: 'box', description: 'Update folder' },
+  'box.delete-folder': { handler: 'box', description: 'Delete folder' },
+  'box.upload-file': { handler: 'box', description: 'Upload file' },
+  'box.download-file': { handler: 'box', description: 'Download file' },
+  'box.update-file': { handler: 'box', description: 'Update file' },
+  'box.delete-file': { handler: 'box', description: 'Delete file' },
+  'box.copy-file': { handler: 'box', description: 'Copy file' },
+  'box.move-file': { handler: 'box', description: 'Move file' },
+  'box.create-shared-link': { handler: 'box', description: 'Create shared link' },
+  'box.search': { handler: 'box', description: 'Search files and folders' },
+  'box.get-me': { handler: 'box', description: 'Get current user information' },
+  'box.create-collaboration': { handler: 'box', description: 'Create collaboration' },
+  'box.update-collaboration': { handler: 'box', description: 'Update collaboration' },
+  'box.delete-collaboration': { handler: 'box', description: 'Delete collaboration' }
 };
 
 // Configuration schemas for each service
@@ -254,6 +275,12 @@ export const serviceConfigs = {
     baseUrl: { type: 'string', required: false, default: 'https://api.openai.com/v1', description: 'OpenAI API base URL' },
     organization: { type: 'string', required: false, description: 'OpenAI organization ID' },
     defaultModel: { type: 'string', required: false, default: 'gpt-4o', description: 'Default model' }
+  },
+  box: {
+    accessToken: { type: 'string', required: true, description: 'Box access token' },
+    baseUrl: { type: 'string', required: false, default: 'https://api.box.com/2.0', description: 'Box API base URL' },
+    clientId: { type: 'string', required: false, description: 'Box client ID' },
+    clientSecret: { type: 'string', required: false, description: 'Box client secret' }
   }
 };
 
@@ -323,6 +350,10 @@ export async function executeTool(tool: string, args: any, config: any) {
     case 'openai':
       const { executeOpenAITool } = await import('./openai');
       return await executeOpenAITool(tool, args, serviceConfig);
+    
+    case 'box':
+      const { executeBoxTool } = await import('./box');
+      return await executeBoxTool(tool, args, serviceConfig);
     
     default:
       throw new Error(`Unknown handler: ${handler}`);

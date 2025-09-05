@@ -57,7 +57,7 @@ app.get('/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    features: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind', 'openai', 'fun-features']
+    features: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind', 'openai', 'box', 'fun-features']
   });
 });
 
@@ -68,7 +68,7 @@ app.get('/metrics', (req, res) => {
     memory: process.memoryUsage(),
     timestamp: new Date().toISOString(),
     tools: getAllTools().length,
-    services: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind', 'openai']
+    services: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind', 'openai', 'box']
   });
 });
 
@@ -102,6 +102,7 @@ app.get('/', (req, res) => {
       neon: 'Neon serverless Postgres database',
       deepmind: 'DeepMind AI research and models',
       openai: 'OpenAI GPT models and services',
+      box: 'Box file storage and collaboration',
       fun: 'Cool features for normal people',
       controlPanel: 'React control panel',
       wowControl: 'Sci-fi features that make people gasp'
@@ -177,6 +178,11 @@ app.post('/tools', async (req, res) => {
         apiKey: process.env.OPENAI_API_KEY || 'demo-key',
         organization: process.env.OPENAI_ORGANIZATION || undefined,
         defaultModel: process.env.OPENAI_DEFAULT_MODEL || 'gpt-4o'
+      },
+      box: {
+        accessToken: process.env.BOX_ACCESS_TOKEN || 'demo-key',
+        clientId: process.env.BOX_CLIENT_ID || undefined,
+        clientSecret: process.env.BOX_CLIENT_SECRET || undefined
       }
     });
 
@@ -793,6 +799,82 @@ const tools: Tool[] = [
         hyperparameters: { type: 'object', description: 'Hyperparameters' }
       },
       required: ['trainingFile']
+    }
+  },
+  // Box tools
+  {
+    name: 'box.get-file',
+    description: 'Get file by ID',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileId: { type: 'string', description: 'File ID' },
+        fields: { type: 'array', items: { type: 'string' }, description: 'Fields to return' }
+      },
+      required: ['fileId']
+    }
+  },
+  {
+    name: 'box.get-folder',
+    description: 'Get folder by ID',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        folderId: { type: 'string', description: 'Folder ID' },
+        fields: { type: 'array', items: { type: 'string' }, description: 'Fields to return' }
+      },
+      required: ['folderId']
+    }
+  },
+  {
+    name: 'box.list-folder-contents',
+    description: 'List folder contents',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        folderId: { type: 'string', description: 'Folder ID' },
+        limit: { type: 'number', description: 'Number of results per page' },
+        offset: { type: 'number', description: 'Number of results to skip' }
+      },
+      required: ['folderId']
+    }
+  },
+  {
+    name: 'box.create-folder',
+    description: 'Create folder',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Folder name' },
+        parentId: { type: 'string', description: 'Parent folder ID' }
+      },
+      required: ['name']
+    }
+  },
+  {
+    name: 'box.upload-file',
+    description: 'Upload file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileName: { type: 'string', description: 'File name' },
+        fileContent: { type: 'string', description: 'File content' },
+        parentId: { type: 'string', description: 'Parent folder ID' }
+      },
+      required: ['fileName', 'fileContent']
+    }
+  },
+  {
+    name: 'box.search',
+    description: 'Search files and folders',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query' },
+        limit: { type: 'number', description: 'Number of results per page' },
+        fileExtensions: { type: 'array', items: { type: 'string' }, description: 'File extensions to filter' }
+      },
+      required: ['query']
     }
   }
 ];
