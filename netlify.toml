@@ -1,0 +1,33 @@
+[build]
+  publish = "."
+  command = "echo 'Static deployment'"
+
+[[redirects]]
+  from = "/health"
+  to = "/api/health"
+  status = 200
+
+[[redirects]]
+  from = "/tools"
+  to = "/api/tools"
+  status = 200
+
+[[redirects]]
+  from = "/logs"
+  to = "/api/logs"
+  status = 200
+
+[[redirects]]
+  from = "/control-panel/*"
+  to = "/web/control-panel/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/wow-control/*"
+  to = "/web/wow-control/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

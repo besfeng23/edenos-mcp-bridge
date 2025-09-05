@@ -2,7 +2,8 @@
   "name": "edenos-mcp-bridge",
   "version": "1.0.0",
   "description": "EdenOS MCP Bridge - Ultimate MCP Server with 15 Service Integrations",
-  "main": "src/server.ts",
+  "main": "server.js",
+  "type": "module",
   "scripts": {
     "build": "echo 'Build completed - using ts-node for Vercel'",
     "start": "ts-node src/server.ts",

@@ -1,10 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.cloneRouter = void 0;
-const child_process_1 = require("child_process");
-const express_1 = require("express");
-exports.cloneRouter = (0, express_1.Router)();
-exports.cloneRouter.post("/clone", async (req, res) => {
+import { spawn } from "child_process";
+import { Router } from "express";
+export const cloneRouter = Router();
+cloneRouter.post("/clone", async (req, res) => {
     const { fromEnv = "prod", toEnv } = req.body;
     if (!toEnv)
         return res.status(400).json({ error: "toEnv required" });
@@ -29,7 +26,7 @@ exports.cloneRouter.post("/clone", async (req, res) => {
 });
 function sh(cmd) {
     return new Promise((res, rej) => {
-        const p = (0, child_process_1.spawn)(cmd, { shell: true, stdio: "inherit" });
+        const p = spawn(cmd, { shell: true, stdio: "inherit" });
         p.on("exit", (c) => c === 0 ? res() : rej(new Error(cmd)));
     });
 }

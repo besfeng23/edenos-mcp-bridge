@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdenOS GCP Workspace - AI-Powered Cloud Infrastructure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #0a0f18 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .gcp-workspace {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 200, 255, 0.1) 0%, transparent 50%);
+        }
+
+        .workspace-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #00ff88;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ff88;
+        }
+
+        .header-subtitle {
+            font-size: 1rem;
+            color: #88ffaa;
+            opacity: 0.8;
+        }
+
+        .workspace-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.7);
+            border-right: 2px solid #00ff88;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .service-list {
+            list-style: none;
+        }
+
+        .service-item {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .service-item:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateX(5px);
+        }
+
+        .service-item.active {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: #88ffaa;
+        }
+
+        .service-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .service-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .content-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid #00ff88;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: scale(1.05);
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .service-detail {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .service-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .service-status {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .resource-list {
+            list-style: none;
+        }
+
+        .resource-item {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .resource-item:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+
+        .resource-name {
+            font-weight: bold;
+            color: #00ff88;
+            margin-bottom: 8px;
+        }
+
+        .resource-details {
+            font-size: 0.9rem;
+            color: #e5e7eb;
+            margin-bottom: 8px;
+        }
+
+        .resource-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .search-bar {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #88ffaa;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            color: #00ff88;
+            font-size: 0.9rem;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .notification.success {
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="gcp-workspace">
+        <div class="workspace-header">
+            <div>
+                <div class="header-title">EDENOS GCP WORKSPACE</div>
+                <div class="header-subtitle">AI-Powered Cloud Infrastructure</div>
+            </div>
+            <div class="content-actions">
+                <button class="action-button" onclick="refreshData()">Refresh</button>
+                <button class="action-button" onclick="deployService()">Deploy</button>
+                <button class="action-button" onclick="createResource()">Create</button>
+            </div>
+        </div>
+
+        <div class="workspace-content">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="section-title">Services</div>
+                    <ul class="service-list" id="service-list">
+                        <li class="service-item active">
+                            <div class="service-name">Cloud Run</div>
+                            <div class="service-meta">Containers • 5 services</div>
+                        </li>
+                        <li class="service-item">
+                            <div class="service-name">Cloud Storage</div>
+                            <div class="service-meta">Buckets • 3 buckets</div>
+                        </li>
+                        <li class="service-item">
+                            <div class="service-name">AI Platform</div>
+                            <div class="service-meta">Models • 2 models</div>
+                        </li>
+                        <li class="service-item">
+                            <div class="service-name">BigQuery</div>
+                            <div class="service-meta">Datasets • 4 datasets</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title">Resources</div>
+                    <ul class="service-list" id="resource-list">
+                        <li class="service-item">
+                            <div class="service-name">edenos-mcp-bridge</div>
+                            <div class="service-meta">Cloud Run • Running</div>
+                        </li>
+                        <li class="service-item">
+                            <div class="service-name">edenos-storage</div>
+                            <div class="service-meta">Storage • 2.3 GB</div>
+                        </li>
+                        <li class="service-item">
+                            <div class="service-name">edenos-ai-model</div>
+                            <div class="service-meta">AI Platform • Active</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-header">
+                    <div class="content-title" id="content-title">Cloud Run</div>
+                    <div class="content-actions">
+                        <button class="action-button" onclick="viewServices()">Services</button>
+                        <button class="action-button" onclick="viewStorage()">Storage</button>
+                        <button class="action-button" onclick="viewAI()">AI Platform</button>
+                    </div>
+                </div>
+
+                <div class="content-body">
+                    <div class="service-detail" id="service-detail">
+                        <div class="service-header">
+                            <div class="service-title">Cloud Run Services</div>
+                            <div class="service-status">Online</div>
+                        </div>
+
+                        <div class="resource-list" id="resource-list">
+                            <li class="resource-item">
+                                <div class="resource-name">edenos-mcp-bridge</div>
+                                <div class="resource-details">Container: gcr.io/edenos/mcp-bridge:latest</div>
+                                <div class="resource-meta">Status: Running • CPU: 1000m • Memory: 512Mi</div>
+                            </li>
+                            <li class="resource-item">
+                                <div class="resource-name">edenos-control-panel</div>
+                                <div class="resource-details">Container: gcr.io/edenos/control-panel:latest</div>
+                                <div class="resource-meta">Status: Running • CPU: 500m • Memory: 256Mi</div>
+                            </li>
+                            <li class="resource-item">
+                                <div class="resource-name">edenos-wow-features</div>
+                                <div class="resource-details">Container: gcr.io/edenos/wow-features:latest</div>
+                                <div class="resource-meta">Status: Running • CPU: 250m • Memory: 128Mi</div>
+                            </li>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script>
+        let currentService = null;
+        let services = [];
+        let resources = [];
+
+        // Initialize the workspace
+        function initWorkspace() {
+            loadServices();
+            loadResources();
+            setupEventListeners();
+            showNotification('GCP Workspace initialized', 'success');
+        }
+
+        // Load services from GCP
+        async function loadServices() {
+            try {
+                // Simulate API call
+                const mockServices = [
+                    { name: 'Cloud Run', type: 'Containers', count: 5, status: 'Online' },
+                    { name: 'Cloud Storage', type: 'Buckets', count: 3, status: 'Online' },
+                    { name: 'AI Platform', type: 'Models', count: 2, status: 'Online' },
+                    { name: 'BigQuery', type: 'Datasets', count: 4, status: 'Online' }
+                ];
+
+                services = mockServices;
+                renderServiceList();
+            } catch (error) {
+                showNotification('Failed to load services', 'error');
+            }
+        }
+
+        // Load resources from GCP
+        async function loadResources() {
+            try {
+                // Simulate API call
+                const mockResources = [
+                    { name: 'edenos-mcp-bridge', type: 'Cloud Run', details: 'Container: gcr.io/edenos/mcp-bridge:latest', status: 'Running', meta: 'CPU: 1000m • Memory: 512Mi' },
+                    { name: 'edenos-storage', type: 'Storage', details: 'Bucket: edenos-storage-bucket', status: 'Active', meta: '2.3 GB • 15 objects' },
+                    { name: 'edenos-ai-model', type: 'AI Platform', details: 'Model: edenos-sentiment-analysis', status: 'Active', meta: 'Version: v1.0 • Accuracy: 94.2%' }
+                ];
+
+                resources = mockResources;
+                renderResourceList();
+            } catch (error) {
+                showNotification('Failed to load resources', 'error');
+            }
+        }
+
+        // Render service list
+        function renderServiceList() {
+            const serviceList = document.getElementById('service-list');
+            serviceList.innerHTML = '';
+
+            services.forEach(service => {
+                const li = document.createElement('li');
+                li.className = 'service-item';
+                li.innerHTML = `
+                    <div class="service-name">${service.name}</div>
+                    <div class="service-meta">${service.type} • ${service.count} items</div>
+                `;
+                li.onclick = () => selectService(service);
+                serviceList.appendChild(li);
+            });
+        }
+
+        // Render resource list
+        function renderResourceList() {
+            const resourceList = document.getElementById('resource-list');
+            resourceList.innerHTML = '';
+
+            resources.forEach(resource => {
+                const li = document.createElement('li');
+                li.className = 'resource-item';
+                li.innerHTML = `
+                    <div class="resource-name">${resource.name}</div>
+                    <div class="resource-details">${resource.details}</div>
+                    <div class="resource-meta">Status: ${resource.status} • ${resource.meta}</div>
+                `;
+                li.onclick = () => selectResource(resource);
+                resourceList.appendChild(li);
+            });
+        }
+
+        // Select a service
+        function selectService(service) {
+            currentService = service;
+            
+            // Update active state
+            document.querySelectorAll('.service-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.service-item').classList.add('active');
+
+            // Update content
+            document.getElementById('content-title').textContent = service.name;
+            loadServiceDetail(service);
+        }
+
+        // Load service detail
+        async function loadServiceDetail(service) {
+            try {
+                // Simulate API call
+                const mockDetail = {
+                    name: service.name,
+                    type: service.type,
+                    count: service.count,
+                    status: service.status
+                };
+
+                document.getElementById('service-detail').innerHTML = `
+                    <div class="service-header">
+                        <div class="service-title">${mockDetail.name}</div>
+                        <div class="service-status">${mockDetail.status}</div>
+                    </div>
+                    <div class="resource-list" id="resource-list">
+                        ${resources.map(resource => `
+                            <li class="resource-item">
+                                <div class="resource-name">${resource.name}</div>
+                                <div class="resource-details">${resource.details}</div>
+                                <div class="resource-meta">Status: ${resource.status} • ${resource.meta}</div>
+                            </li>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                showNotification('Failed to load service detail', 'error');
+            }
+        }
+
+        // Select a resource
+        function selectResource(resource) {
+            showNotification(`Selected resource: ${resource.name}`, 'success');
+        }
+
+        // Refresh data
+        function refreshData() {
+            showNotification('Refreshing data...', 'success');
+            loadServices();
+            loadResources();
+        }
+
+        // Deploy service
+        function deployService() {
+            const serviceName = prompt('Enter service name:');
+            const imageUrl = prompt('Enter container image URL:');
+            if (serviceName && imageUrl) {
+                showNotification(`Deploying ${serviceName}...`, 'success');
+            }
+        }
+
+        // Create resource
+        function createResource() {
+            const resourceName = prompt('Enter resource name:');
+            const resourceType = prompt('Enter resource type:');
+            if (resourceName && resourceType) {
+                showNotification(`Creating ${resourceType}: ${resourceName}`, 'success');
+            }
+        }
+
+        // View services
+        function viewServices() {
+            showNotification('Viewing Cloud Run services...', 'success');
+        }
+
+        // View storage
+        function viewStorage() {
+            showNotification('Viewing Cloud Storage buckets...', 'success');
+        }
+
+        // View AI
+        function viewAI() {
+            showNotification('Viewing AI Platform models...', 'success');
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Service search
+            const searchBar = document.createElement('input');
+            searchBar.type = 'text';
+            searchBar.className = 'search-bar';
+            searchBar.placeholder = 'Search services...';
+            searchBar.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const serviceItems = document.querySelectorAll('.service-item');
+                
+                serviceItems.forEach(item => {
+                    const name = item.querySelector('.service-name').textContent.toLowerCase();
+                    if (name.includes(query)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.insertBefore(searchBar, sidebar.firstChild);
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initWorkspace);
+    </script>
+</body>
+</html>

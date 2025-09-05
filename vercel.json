@@ -2,10 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/server.ts",
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "server.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["src/**", "plugins/**", "web/**"],
+        "includeFiles": ["web/**"],
         "runtime": "nodejs18.x"
       }
     }
@@ -13,39 +17,31 @@
   "routes": [
     {
       "src": "/",
-      "dest": "/src/server.ts"
+      "dest": "/index.html"
     },
     {
       "src": "/health",
-      "dest": "/src/server.ts"
-    },
-    {
-      "src": "/metrics",
-      "dest": "/src/server.ts"
+      "dest": "/server.js"
     },
     {
       "src": "/tools",
-      "dest": "/src/server.ts"
+      "dest": "/server.js"
     },
     {
       "src": "/logs",
-      "dest": "/src/server.ts"
-    },
-    {
-      "src": "/fun/(.*)",
-      "dest": "/src/server.ts"
+      "dest": "/server.js"
     },
     {
       "src": "/web/(.*)",
-      "dest": "/src/server.ts"
+      "dest": "/server.js"
     },
     {
       "src": "/control-panel/(.*)",
-      "dest": "/src/server.ts"
+      "dest": "/server.js"
     },
     {
       "src": "/wow-control/(.*)",
-      "dest": "/src/server.ts"
+      "dest": "/server.js"
     }
   ],
   "env": {

@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdenOS Wow Control Center - Normal People Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #0a0f18 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .wow-container {
+            position: relative;
+            width: 100vw;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .wow-header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .wow-title {
+            font-size: 3rem;
+            font-weight: bold;
+            text-shadow: 0 0 30px #00ff88;
+            margin-bottom: 20px;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% { text-shadow: 0 0 30px #00ff88; }
+            100% { text-shadow: 0 0 50px #00ff88, 0 0 70px #88ffaa; }
+        }
+
+        .wow-subtitle {
+            font-size: 1.5rem;
+            color: #88ffaa;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .wow-description {
+            font-size: 1rem;
+            color: #aaa;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .wow-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .wow-card {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #00ff88;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .wow-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.3);
+            border-color: #88ffaa;
+        }
+
+        .wow-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.1), transparent);
+            animation: cardScan 4s infinite;
+        }
+
+        @keyframes cardScan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .card-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ff88;
+        }
+
+        .card-description {
+            font-size: 1rem;
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .card-button {
+            background: linear-gradient(45deg, #00ff88, #88ffaa);
+            border: none;
+            color: #000;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .feature-highlight {
+            background: rgba(0, 255, 136, 0.1);
+            border: 2px solid #00ff88;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .highlight-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #00ff88;
+        }
+
+        .highlight-text {
+            font-size: 1.2rem;
+            color: #88ffaa;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .demo-section {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #ffaa00;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .demo-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #ffaa00;
+        }
+
+        .demo-button {
+            background: linear-gradient(45deg, #ffaa00, #ffcc00);
+            border: none;
+            color: #000;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 10px;
+        }
+
+        .demo-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 170, 0, 0.5);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px;
+            border-top: 2px solid #00ff88;
+        }
+
+        .footer-text {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        .footer-link {
+            color: #00ff88;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .footer-link:hover {
+            text-shadow: 0 0 10px #00ff88;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            color: #00ff88;
+            font-size: 0.9rem;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+
+        .notification.warning {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+
+        .notification.error {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="wow-container">
+        <div class="wow-header">
+            <div class="wow-title">EDENOS WOW CONTROL CENTER</div>
+            <div class="wow-subtitle">Normal People Edition</div>
+            <div class="wow-description">
+                The features that make civilians gasp and think you're running a futuristic AI control center. 
+                No technical jargon, just pure sci-fi magic that makes everyone think you're a wizard.
+            </div>
+        </div>
+
+        <div class="wow-grid">
+            <div class="wow-card" onclick="openFeature('mission-control')">
+                <div class="card-icon">🚀</div>
+                <div class="card-title">Live Mission Control Wall</div>
+                <div class="card-description">
+                    Big dashboard with giant tiles: green = good, red = broken, graphs updating in real time. 
+                    Feels like NASA, even if it's just Firebase hosting pushing HTML.
+                </div>
+                <button class="card-button">Launch Mission Control</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('holographic-memory')">
+                <div class="card-icon">🌌</div>
+                <div class="card-title">Holographic Memory Map</div>
+                <div class="card-description">
+                    3D bubble graph of all your chats/transactions, floating and pulsing. 
+                    Spin it with your mouse or VR headset. No one will understand it, but they'll call it "next level."
+                </div>
+                <button class="card-button">Enter Memory Matrix</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('investor-button')">
+                <div class="card-icon">🎯</div>
+                <div class="card-title">Investor Button</div>
+                <div class="card-description">
+                    One big, glowing button labeled LAUNCH. Press it in front of someone, and it pushes a whole new release, 
+                    shows a flashy animation, and updates a live URL. Zero technical jargon, max spectacle.
+                </div>
+                <button class="card-button">Press the Button</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('magic-mirror')">
+                <div class="card-icon">🪞</div>
+                <div class="card-title">Magic Mirror Mode</div>
+                <div class="card-description">
+                    Pull up a live dashboard that introduces itself like Jarvis: "Hello Joven, here's today's system health, 
+                    transaction flow, and sentiment trends." It's just a UI wrapper. But it feels alive.
+                </div>
+                <button class="card-button">Activate Jarvis</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('error-meme-generator')">
+                <div class="card-icon">😂</div>
+                <div class="card-title">Error Meme Generator</div>
+                <div class="card-description">
+                    When a deploy fails, it automatically posts a meme ("This is fine" dog, exploding rocket, etc.) 
+                    in your chat. Normal people love this because humor beats log spew.
+                </div>
+                <button class="card-button">Generate Memes</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('voice-commands')">
+                <div class="card-icon">🎤</div>
+                <div class="card-title">Voice-Command Ops</div>
+                <div class="card-description">
+                    You say: "EdenOS, deploy the studio." Bridge obeys. Everyone's jaw drops. 
+                    Nobody needs to know it's just speech-to-text + a POST request.
+                </div>
+                <button class="card-button">Start Voice Control</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('notion-workspace')">
+                <div class="card-icon">📝</div>
+                <div class="card-title">Notion Workspace</div>
+                <div class="card-description">
+                    AI-powered knowledge management with real-time page synchronization. 
+                    Create, edit, and organize your Notion pages with the power of EdenOS.
+                </div>
+                <button class="card-button">Open Notion</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('linear-workspace')">
+                <div class="card-icon">📊</div>
+                <div class="card-title">Linear Workspace</div>
+                <div class="card-description">
+                    AI-powered project management with issue tracking, project management, 
+                    and team collaboration. Manage your Linear workspace like a pro.
+                </div>
+                <button class="card-button">Open Linear</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('github-workspace')">
+                <div class="card-icon">🐙</div>
+                <div class="card-title">GitHub Workspace</div>
+                <div class="card-description">
+                    AI-powered code management with repositories, issues, pull requests, 
+                    and GitHub Actions. Manage your code like a professional developer.
+                </div>
+                <button class="card-button">Open GitHub</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('firebase-workspace')">
+                <div class="card-icon">🔥</div>
+                <div class="card-title">Firebase Workspace</div>
+                <div class="card-description">
+                    AI-powered cloud services with Firestore, Authentication, and Hosting. 
+                    Build and deploy apps with the power of Firebase.
+                </div>
+                <button class="card-button">Open Firebase</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('gcp-workspace')">
+                <div class="card-icon">☁️</div>
+                <div class="card-title">GCP Workspace</div>
+                <div class="card-description">
+                    AI-powered cloud infrastructure with Cloud Run, Storage, AI Platform, 
+                    and BigQuery. Scale your applications with Google Cloud.
+                </div>
+                <button class="card-button">Open GCP</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('figma-workspace')">
+                <div class="card-icon">🎨</div>
+                <div class="card-title">Figma Workspace</div>
+                <div class="card-description">
+                    AI-powered design management with files, components, and comments. 
+                    Collaborate on designs with the power of Figma.
+                </div>
+                <button class="card-button">Open Figma</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('zapier-workspace')">
+                <div class="card-icon">⚡</div>
+                <div class="card-title">Zapier Workspace</div>
+                <div class="card-description">
+                    AI-powered automation with zaps, triggers, and actions. 
+                    Connect your apps and automate workflows like a pro.
+                </div>
+                <button class="card-button">Open Zapier</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('bnd-workspace')">
+                <div class="card-icon">🔗</div>
+                <div class="card-title">Bnd Workspace</div>
+                <div class="card-description">
+                    AI-powered blockchain and DeFi operations with smart contracts, 
+                    tokens, and liquidity pools. Master the decentralized future.
+                </div>
+                <button class="card-button">Open Bnd</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('saviynt-workspace')">
+                <div class="card-icon">🛡️</div>
+                <div class="card-title">Saviynt Workspace</div>
+                <div class="card-description">
+                    AI-powered identity governance with user management, 
+                    role assignments, and access controls. Secure your enterprise.
+                </div>
+                <button class="card-button">Open Saviynt</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('anthropic-workspace')">
+                <div class="card-icon">🤖</div>
+                <div class="card-title">Anthropic Workspace</div>
+                <div class="card-description">
+                    AI-powered language models with text generation, 
+                    sentiment analysis, and code generation. Harness the power of AI.
+                </div>
+                <button class="card-button">Open Anthropic</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('neon-workspace')">
+                <div class="card-icon">💾</div>
+                <div class="card-title">Neon Workspace</div>
+                <div class="card-description">
+                    AI-powered serverless Postgres with database management, 
+                    query execution, and data operations. Scale your data.
+                </div>
+                <button class="card-button">Open Neon</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('deepmind-workspace')">
+                <div class="card-icon">🧠</div>
+                <div class="card-title">DeepMind Workspace</div>
+                <div class="card-description">
+                    AI-powered research and experimentation with models, 
+                    experiments, and cutting-edge AI capabilities. Push boundaries.
+                </div>
+                <button class="card-button">Open DeepMind</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('openai-workspace')">
+                <div class="card-icon">🤖</div>
+                <div class="card-title">OpenAI Workspace</div>
+                <div class="card-description">
+                    AI-powered GPT models with text generation, embeddings, 
+                    image creation, and fine-tuning. Master the future of AI.
+                </div>
+                <button class="card-button">Open OpenAI</button>
+            </div>
+
+            <div class="wow-card" onclick="openFeature('box-workspace')">
+                <div class="card-icon">📦</div>
+                <div class="card-title">Box Workspace</div>
+                <div class="card-description">
+                    Enterprise file storage and collaboration with secure sharing, 
+                    version control, and team workflows. Organize everything.
+                </div>
+                <button class="card-button">Open Box</button>
+            </div>
+        </div>
+
+        <div class="feature-highlight">
+            <div class="highlight-title">Why This Works</div>
+            <div class="highlight-text">
+                Normal people don't care about Terraform plans or idempotency keys. They care if it <strong>looks like sci-fi</strong> 
+                or <strong>feels like magic</strong>. These features make your MCP bridge look like a futuristic AI control center, 
+                even though under the hood it's just your bridge wrapping `gcloud` and Firebase calls.
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">Ready to Wow the Crowd?</div>
+            <div class="demo-text" style="margin-bottom: 20px; color: #aaa;">
+                Pick any feature and watch as normal people think you're running the next generation of AI infrastructure.
+            </div>
+            <button class="demo-button" onclick="showRandomFeature()">
+                Show Me Something Cool
+            </button>
+            <button class="demo-button" onclick="openAllFeatures()">
+                Open All Features
+            </button>
+        </div>
+
+        <div class="footer">
+            <div class="footer-text">
+                EdenOS Wow Control Center - Making MCP management look like magic since 2024
+            </div>
+            <div class="footer-text">
+                <a href="#" class="footer-link" onclick="showNotification('Coming soon: More wow features!', 'success')">
+                    More Features Coming Soon
+                </a>
+            </div>
+        </div>
+
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script>
+        // Feature URLs
+        const features = {
+            'mission-control': 'ControlCenter.html',
+            'holographic-memory': 'HolographicMemory.html',
+            'investor-button': 'InvestorButton.html',
+            'magic-mirror': 'MagicMirror.html',
+            'error-meme-generator': 'ErrorMemeGenerator.html',
+            'voice-commands': 'ControlCenter.html', // Voice commands are in mission control
+            'notion-workspace': 'NotionWorkspace.html',
+            'linear-workspace': 'LinearWorkspace.html',
+            'github-workspace': 'GitHubWorkspace.html',
+            'firebase-workspace': 'FirebaseWorkspace.html',
+            'gcp-workspace': 'GCPWorkspace.html',
+            'figma-workspace': 'FigmaWorkspace.html',
+            'zapier-workspace': 'ZapierWorkspace.html',
+            'bnd-workspace': 'BndWorkspace.html',
+            'saviynt-workspace': 'SaviyntWorkspace.html',
+            'anthropic-workspace': 'AnthropicWorkspace.html',
+            'neon-workspace': 'NeonWorkspace.html',
+            'deepmind-workspace': 'DeepMindWorkspace.html',
+            'openai-workspace': 'OpenAIWorkspace.html',
+            'box-workspace': 'BoxWorkspace.html'
+        };
+
+        // Open a specific feature
+        function openFeature(featureName) {
+            const featureUrl = features[featureName];
+            if (featureUrl) {
+                window.open(featureUrl, '_blank');
+                showNotification(`Opening ${featureName.replace('-', ' ')}...`, 'success');
+            } else {
+                showNotification('Feature not found!', 'error');
+            }
+        }
+
+        // Show a random feature
+        function showRandomFeature() {
+            const featureNames = Object.keys(features);
+            const randomFeature = featureNames[Math.floor(Math.random() * featureNames.length)];
+            openFeature(randomFeature);
+        }
+
+        // Open all features in new tabs
+        function openAllFeatures() {
+            Object.values(features).forEach(url => {
+                window.open(url, '_blank');
+            });
+            showNotification('Opening all features in new tabs...', 'success');
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Add some initial animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.wow-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(50px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Show welcome message
+            setTimeout(() => {
+                showNotification('Welcome to EdenOS Wow Control Center!', 'success');
+            }, 1000);
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey || event.metaKey) {
+                switch(event.key) {
+                    case '1':
+                        event.preventDefault();
+                        openFeature('mission-control');
+                        break;
+                    case '2':
+                        event.preventDefault();
+                        openFeature('holographic-memory');
+                        break;
+                    case '3':
+                        event.preventDefault();
+                        openFeature('investor-button');
+                        break;
+                    case '4':
+                        event.preventDefault();
+                        openFeature('magic-mirror');
+                        break;
+                    case '5':
+                        event.preventDefault();
+                        openFeature('error-meme-generator');
+                        break;
+                    case 'r':
+                        event.preventDefault();
+                        showRandomFeature();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdenOS Firebase Workspace - AI-Powered Cloud Services</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #0a0f18 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .firebase-workspace {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 200, 255, 0.1) 0%, transparent 50%);
+        }
+
+        .workspace-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #00ff88;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ff88;
+        }
+
+        .header-subtitle {
+            font-size: 1rem;
+            color: #88ffaa;
+            opacity: 0.8;
+        }
+
+        .workspace-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.7);
+            border-right: 2px solid #00ff88;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .service-list {
+            list-style: none;
+        }
+
+        .service-item {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .service-item:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateX(5px);
+        }
+
+        .service-item.active {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: #88ffaa;
+        }
+
+        .service-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .service-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .content-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid #00ff88;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: scale(1.05);
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .service-detail {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .service-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .service-status {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .document-list {
+            list-style: none;
+        }
+
+        .document-item {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .document-item:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+
+        .document-id {
+            font-weight: bold;
+            color: #00ff88;
+            margin-bottom: 8px;
+        }
+
+        .document-data {
+            font-size: 0.9rem;
+            color: #e5e7eb;
+            margin-bottom: 8px;
+        }
+
+        .document-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .search-bar {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #88ffaa;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            color: #00ff88;
+            font-size: 0.9rem;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .notification.success {
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="firebase-workspace">
+        <div class="workspace-header">
+            <div>
+                <div class="header-title">EDENOS FIREBASE WORKSPACE</div>
+                <div class="header-subtitle">AI-Powered Cloud Services</div>
+            </div>
+            <div class="content-actions">
+                <button class="action-button" onclick="refreshData()">Refresh</button>
+                <button class="action-button" onclick="createDocument()">New Document</button>
+                <button class="action-button" onclick="deployHosting()">Deploy</button>
+            </div>
+        </div>
+
+        <div class="workspace-content">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="section-title">Services</div>
+                    <ul class="service-list" id="service-list">
+                        <li class="service-item active">
+                            <div class="service-name">Firestore Database</div>
+                            <div class="service-meta">NoSQL • 15 collections</div>
+                        </li>
+                        <li class="service-item">
+                            <div class="service-name">Authentication</div>
+                            <div class="service-meta">Users • 42 active</div>
+                        </li>
+                        <li class="service-item">
+                            <div class="service-name">Hosting</div>
+                            <div class="service-meta">Sites • 3 deployed</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title">Collections</div>
+                    <ul class="service-list" id="collection-list">
+                        <li class="service-item">
+                            <div class="service-name">users</div>
+                            <div class="service-meta">42 documents</div>
+                        </li>
+                        <li class="service-item">
+                            <div class="service-name">projects</div>
+                            <div class="service-meta">8 documents</div>
+                        </li>
+                        <li class="service-item">
+                            <div class="service-name">tasks</div>
+                            <div class="service-meta">156 documents</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-header">
+                    <div class="content-title" id="content-title">Firestore Database</div>
+                    <div class="content-actions">
+                        <button class="action-button" onclick="viewCollections()">Collections</button>
+                        <button class="action-button" onclick="viewUsers()">Users</button>
+                        <button class="action-button" onclick="viewHosting()">Hosting</button>
+                    </div>
+                </div>
+
+                <div class="content-body">
+                    <div class="service-detail" id="service-detail">
+                        <div class="service-header">
+                            <div class="service-title">Firestore Database</div>
+                            <div class="service-status">Online</div>
+                        </div>
+
+                        <div class="document-list" id="document-list">
+                            <li class="document-item">
+                                <div class="document-id">users/12345</div>
+                                <div class="document-data">{"name": "John Doe", "email": "john@example.com", "role": "admin"}</div>
+                                <div class="document-meta">Created 2 hours ago</div>
+                            </li>
+                            <li class="document-item">
+                                <div class="document-id">projects/67890</div>
+                                <div class="document-data">{"title": "EdenOS MCP Bridge", "status": "active", "owner": "besfeng23"}</div>
+                                <div class="document-meta">Created 1 day ago</div>
+                            </li>
+                            <li class="document-item">
+                                <div class="document-id">tasks/11111</div>
+                                <div class="document-data">{"title": "Add GitHub integration", "completed": false, "priority": "high"}</div>
+                                <div class="document-meta">Created 3 days ago</div>
+                            </li>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script>
+        let currentService = null;
+        let services = [];
+        let documents = [];
+
+        // Initialize the workspace
+        function initWorkspace() {
+            loadServices();
+            loadDocuments();
+            setupEventListeners();
+            showNotification('Firebase Workspace initialized', 'success');
+        }
+
+        // Load services from Firebase
+        async function loadServices() {
+            try {
+                // Simulate API call
+                const mockServices = [
+                    { name: 'Firestore Database', type: 'NoSQL', count: 15, status: 'Online' },
+                    { name: 'Authentication', type: 'Users', count: 42, status: 'Online' },
+                    { name: 'Hosting', type: 'Sites', count: 3, status: 'Online' }
+                ];
+
+                services = mockServices;
+                renderServiceList();
+            } catch (error) {
+                showNotification('Failed to load services', 'error');
+            }
+        }
+
+        // Load documents from Firestore
+        async function loadDocuments() {
+            try {
+                // Simulate API call
+                const mockDocuments = [
+                    { id: 'users/12345', data: '{"name": "John Doe", "email": "john@example.com", "role": "admin"}', created: '2 hours ago' },
+                    { id: 'projects/67890', data: '{"title": "EdenOS MCP Bridge", "status": "active", "owner": "besfeng23"}', created: '1 day ago' },
+                    { id: 'tasks/11111', data: '{"title": "Add GitHub integration", "completed": false, "priority": "high"}', created: '3 days ago' }
+                ];
+
+                documents = mockDocuments;
+                renderDocumentList();
+            } catch (error) {
+                showNotification('Failed to load documents', 'error');
+            }
+        }
+
+        // Render service list
+        function renderServiceList() {
+            const serviceList = document.getElementById('service-list');
+            serviceList.innerHTML = '';
+
+            services.forEach(service => {
+                const li = document.createElement('li');
+                li.className = 'service-item';
+                li.innerHTML = `
+                    <div class="service-name">${service.name}</div>
+                    <div class="service-meta">${service.type} • ${service.count} items</div>
+                `;
+                li.onclick = () => selectService(service);
+                serviceList.appendChild(li);
+            });
+        }
+
+        // Render document list
+        function renderDocumentList() {
+            const documentList = document.getElementById('document-list');
+            documentList.innerHTML = '';
+
+            documents.forEach(doc => {
+                const li = document.createElement('li');
+                li.className = 'document-item';
+                li.innerHTML = `
+                    <div class="document-id">${doc.id}</div>
+                    <div class="document-data">${doc.data}</div>
+                    <div class="document-meta">Created ${doc.created}</div>
+                `;
+                li.onclick = () => selectDocument(doc);
+                documentList.appendChild(li);
+            });
+        }
+
+        // Select a service
+        function selectService(service) {
+            currentService = service;
+            
+            // Update active state
+            document.querySelectorAll('.service-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.service-item').classList.add('active');
+
+            // Update content
+            document.getElementById('content-title').textContent = service.name;
+            loadServiceDetail(service);
+        }
+
+        // Load service detail
+        async function loadServiceDetail(service) {
+            try {
+                // Simulate API call
+                const mockDetail = {
+                    name: service.name,
+                    type: service.type,
+                    count: service.count,
+                    status: service.status
+                };
+
+                document.getElementById('service-detail').innerHTML = `
+                    <div class="service-header">
+                        <div class="service-title">${mockDetail.name}</div>
+                        <div class="service-status">${mockDetail.status}</div>
+                    </div>
+                    <div class="document-list" id="document-list">
+                        ${documents.map(doc => `
+                            <li class="document-item">
+                                <div class="document-id">${doc.id}</div>
+                                <div class="document-data">${doc.data}</div>
+                                <div class="document-meta">Created ${doc.created}</div>
+                            </li>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                showNotification('Failed to load service detail', 'error');
+            }
+        }
+
+        // Select a document
+        function selectDocument(doc) {
+            showNotification(`Selected document: ${doc.id}`, 'success');
+        }
+
+        // Refresh data
+        function refreshData() {
+            showNotification('Refreshing data...', 'success');
+            loadServices();
+            loadDocuments();
+        }
+
+        // Create new document
+        function createDocument() {
+            const id = prompt('Enter document ID:');
+            const data = prompt('Enter document data (JSON):');
+            if (id && data) {
+                const newDoc = {
+                    id: id,
+                    data: data,
+                    created: 'Just now'
+                };
+                documents.unshift(newDoc);
+                renderDocumentList();
+                showNotification('Document created successfully', 'success');
+            }
+        }
+
+        // Deploy to hosting
+        function deployHosting() {
+            showNotification('Deploying to Firebase Hosting...', 'success');
+        }
+
+        // View collections
+        function viewCollections() {
+            showNotification('Viewing collections...', 'success');
+        }
+
+        // View users
+        function viewUsers() {
+            showNotification('Viewing users...', 'success');
+        }
+
+        // View hosting
+        function viewHosting() {
+            showNotification('Viewing hosting sites...', 'success');
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Service search
+            const searchBar = document.createElement('input');
+            searchBar.type = 'text';
+            searchBar.className = 'search-bar';
+            searchBar.placeholder = 'Search services...';
+            searchBar.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const serviceItems = document.querySelectorAll('.service-item');
+                
+                serviceItems.forEach(item => {
+                    const name = item.querySelector('.service-name').textContent.toLowerCase();
+                    if (name.includes(query)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.insertBefore(searchBar, sidebar.firstChild);
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initWorkspace);
+    </script>
+</body>
+</html>

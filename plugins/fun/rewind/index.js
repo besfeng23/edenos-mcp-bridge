@@ -1,10 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.rewindRouter = void 0;
-const express_1 = require("express");
-const child_process_1 = require("child_process");
-exports.rewindRouter = (0, express_1.Router)();
-exports.rewindRouter.post("/snapshot", async (req, res) => {
+import { Router } from "express";
+import { spawn } from "child_process";
+export const rewindRouter = Router();
+rewindRouter.post("/snapshot", async (req, res) => {
     const ts = new Date().toISOString().replace(/[:.]/g, "-");
     const label = req.body.label || ts;
     try {
@@ -18,7 +15,7 @@ exports.rewindRouter.post("/snapshot", async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
-exports.rewindRouter.post("/restore", async (req, res) => {
+rewindRouter.post("/restore", async (req, res) => {
     const { label, toEnv } = req.body;
     if (!label || !toEnv)
         return res.status(400).json({ error: "label,toEnv required" });
@@ -35,7 +32,7 @@ exports.rewindRouter.post("/restore", async (req, res) => {
 });
 function sh(cmd) {
     return new Promise((res, rej) => {
-        const p = (0, child_process_1.spawn)(cmd, { shell: true, stdio: "inherit" });
+        const p = spawn(cmd, { shell: true, stdio: "inherit" });
         p.on("exit", (c) => c === 0 ? res() : rej(new Error(cmd)));
     });
 }

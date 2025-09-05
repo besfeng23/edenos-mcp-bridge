@@ -1,18 +1,14 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.doppelRouter = void 0;
-exports.logCmd = logCmd;
-const aiplatform_1 = require("@google-cloud/aiplatform");
-const express_1 = require("express");
-const client = new aiplatform_1.DiscussServiceClient();
-exports.doppelRouter = (0, express_1.Router)();
+import { DiscussServiceClient } from "@google-cloud/aiplatform";
+import { Router } from "express";
+const client = new DiscussServiceClient();
+export const doppelRouter = Router();
 const history = [];
-function logCmd(c) {
+export function logCmd(c) {
     history.push(`[${new Date().toISOString()}] ${c}`);
     if (history.length > 200)
         history.shift();
 }
-exports.doppelRouter.post("/plan", async (req, res) => {
+doppelRouter.post("/plan", async (req, res) => {
     try {
         const prompt = [
             "You are EdenOS Operator. Given recent commands, propose the next 5 commands for this week.",
