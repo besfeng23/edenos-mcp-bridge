@@ -8,7 +8,11 @@
     "start": "ts-node src/server.ts",
     "dev": "ts-node src/server.ts",
     "vercel-build": "echo 'Vercel build completed'",
-    "vercel-dev": "ts-node src/server.ts"
+    "vercel-dev": "ts-node src/server.ts",
+    "aws-deploy": "aws/deploy.sh",
+    "aws-deploy-win": "powershell -ExecutionPolicy Bypass -File aws/deploy.ps1",
+    "docker-build": "docker build -t edenos-mcp-bridge .",
+    "docker-run": "docker run -p 3000:3000 --env-file .env edenos-mcp-bridge"
   },
   "keywords": [
     "mcp",
