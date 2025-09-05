@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdenOS Figma Workspace - AI-Powered Design Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #0a0f18 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .figma-workspace {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 200, 255, 0.1) 0%, transparent 50%);
+        }
+
+        .workspace-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #00ff88;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ff88;
+        }
+
+        .header-subtitle {
+            font-size: 1rem;
+            color: #88ffaa;
+            opacity: 0.8;
+        }
+
+        .workspace-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.7);
+            border-right: 2px solid #00ff88;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .file-list {
+            list-style: none;
+        }
+
+        .file-item {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateX(5px);
+        }
+
+        .file-item.active {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: #88ffaa;
+        }
+
+        .file-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .file-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .content-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid #00ff88;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: scale(1.05);
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .file-detail {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .file-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .file-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .file-status {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .component-list {
+            list-style: none;
+        }
+
+        .component-item {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .component-item:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+
+        .component-name {
+            font-weight: bold;
+            color: #00ff88;
+            margin-bottom: 8px;
+        }
+
+        .component-description {
+            font-size: 0.9rem;
+            color: #e5e7eb;
+            margin-bottom: 8px;
+        }
+
+        .component-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .search-bar {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #88ffaa;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            color: #00ff88;
+            font-size: 0.9rem;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .notification.success {
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="figma-workspace">
+        <div class="workspace-header">
+            <div>
+                <div class="header-title">EDENOS FIGMA WORKSPACE</div>
+                <div class="header-subtitle">AI-Powered Design Management</div>
+            </div>
+            <div class="content-actions">
+                <button class="action-button" onclick="refreshData()">Refresh</button>
+                <button class="action-button" onclick="createFile()">New File</button>
+                <button class="action-button" onclick="exportImages()">Export</button>
+            </div>
+        </div>
+
+        <div class="workspace-content">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="section-title">Files</div>
+                    <input type="text" class="search-bar" placeholder="Search files..." id="file-search">
+                    <ul class="file-list" id="file-list">
+                        <li class="file-item active">
+                            <div class="file-name">EdenOS Design System</div>
+                            <div class="file-meta">Updated 2 hours ago • 15 components</div>
+                        </li>
+                        <li class="file-item">
+                            <div class="file-name">Mobile App Wireframes</div>
+                            <div class="file-meta">Updated 1 day ago • 8 pages</div>
+                        </li>
+                        <li class="file-item">
+                            <div class="file-name">Website Mockups</div>
+                            <div class="file-meta">Updated 3 days ago • 12 pages</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title">Recent Components</div>
+                    <ul class="file-list" id="component-list">
+                        <li class="file-item">
+                            <div class="file-name">Button Primary</div>
+                            <div class="file-meta">Used 5 times</div>
+                        </li>
+                        <li class="file-item">
+                            <div class="file-name">Card Component</div>
+                            <div class="file-meta">Used 12 times</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-header">
+                    <div class="content-title" id="content-title">EdenOS Design System</div>
+                    <div class="content-actions">
+                        <button class="action-button" onclick="viewComponents()">Components</button>
+                        <button class="action-button" onclick="viewStyles()">Styles</button>
+                        <button class="action-button" onclick="viewComments()">Comments</button>
+                    </div>
+                </div>
+
+                <div class="content-body">
+                    <div class="file-detail" id="file-detail">
+                        <div class="file-header">
+                            <div class="file-title">EdenOS Design System</div>
+                            <div class="file-status">Active</div>
+                        </div>
+
+                        <div class="component-list" id="component-list">
+                            <li class="component-item">
+                                <div class="component-name">Button Primary</div>
+                                <div class="component-description">Primary action button with hover states</div>
+                                <div class="component-meta">Created 2 hours ago • Used 5 times</div>
+                            </li>
+                            <li class="component-item">
+                                <div class="component-name">Card Component</div>
+                                <div class="component-description">Reusable card layout with header and content</div>
+                                <div class="component-meta">Created 1 day ago • Used 12 times</div>
+                            </li>
+                            <li class="component-item">
+                                <div class="component-name">Input Field</div>
+                                <div class="component-description">Text input with validation states</div>
+                                <div class="component-meta">Created 2 days ago • Used 8 times</div>
+                            </li>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let files = [];
+        let components = [];
+
+        // Initialize the workspace
+        function initWorkspace() {
+            loadFiles();
+            loadComponents();
+            setupEventListeners();
+            showNotification('Figma Workspace initialized', 'success');
+        }
+
+        // Load files from Figma
+        async function loadFiles() {
+            try {
+                // Simulate API call
+                const mockFiles = [
+                    { name: 'EdenOS Design System', updated: '2 hours ago', components: 15, pages: 5 },
+                    { name: 'Mobile App Wireframes', updated: '1 day ago', components: 8, pages: 12 },
+                    { name: 'Website Mockups', updated: '3 days ago', components: 12, pages: 8 }
+                ];
+
+                files = mockFiles;
+                renderFileList();
+            } catch (error) {
+                showNotification('Failed to load files', 'error');
+            }
+        }
+
+        // Load components from Figma
+        async function loadComponents() {
+            try {
+                // Simulate API call
+                const mockComponents = [
+                    { name: 'Button Primary', description: 'Primary action button with hover states', created: '2 hours ago', used: 5 },
+                    { name: 'Card Component', description: 'Reusable card layout with header and content', created: '1 day ago', used: 12 },
+                    { name: 'Input Field', description: 'Text input with validation states', created: '2 days ago', used: 8 }
+                ];
+
+                components = mockComponents;
+                renderComponentList();
+            } catch (error) {
+                showNotification('Failed to load components', 'error');
+            }
+        }
+
+        // Render file list
+        function renderFileList() {
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = '';
+
+            files.forEach(file => {
+                const li = document.createElement('li');
+                li.className = 'file-item';
+                li.innerHTML = `
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-meta">Updated ${file.updated} • ${file.components} components</div>
+                `;
+                li.onclick = () => selectFile(file);
+                fileList.appendChild(li);
+            });
+        }
+
+        // Render component list
+        function renderComponentList() {
+            const componentList = document.getElementById('component-list');
+            componentList.innerHTML = '';
+
+            components.forEach(component => {
+                const li = document.createElement('li');
+                li.className = 'component-item';
+                li.innerHTML = `
+                    <div class="component-name">${component.name}</div>
+                    <div class="component-description">${component.description}</div>
+                    <div class="component-meta">Created ${component.created} • Used ${component.used} times</div>
+                `;
+                li.onclick = () => selectComponent(component);
+                componentList.appendChild(li);
+            });
+        }
+
+        // Select a file
+        function selectFile(file) {
+            currentFile = file;
+            
+            // Update active state
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.file-item').classList.add('active');
+
+            // Update content
+            document.getElementById('content-title').textContent = file.name;
+            loadFileDetail(file);
+        }
+
+        // Load file detail
+        async function loadFileDetail(file) {
+            try {
+                // Simulate API call
+                const mockDetail = {
+                    name: file.name,
+                    updated: file.updated,
+                    components: file.components,
+                    status: 'Active'
+                };
+
+                document.getElementById('file-detail').innerHTML = `
+                    <div class="file-header">
+                        <div class="file-title">${mockDetail.name}</div>
+                        <div class="file-status">${mockDetail.status}</div>
+                    </div>
+                    <div class="component-list" id="component-list">
+                        ${components.map(component => `
+                            <li class="component-item">
+                                <div class="component-name">${component.name}</div>
+                                <div class="component-description">${component.description}</div>
+                                <div class="component-meta">Created ${component.created} • Used ${component.used} times</div>
+                            </li>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                showNotification('Failed to load file detail', 'error');
+            }
+        }
+
+        // Select a component
+        function selectComponent(component) {
+            showNotification(`Selected component: ${component.name}`, 'success');
+        }
+
+        // Refresh data
+        function refreshData() {
+            showNotification('Refreshing data...', 'success');
+            loadFiles();
+            loadComponents();
+        }
+
+        // Create new file
+        function createFile() {
+            const name = prompt('Enter file name:');
+            if (name) {
+                const newFile = {
+                    name: name,
+                    updated: 'Just now',
+                    components: 0,
+                    pages: 1
+                };
+                files.unshift(newFile);
+                renderFileList();
+                selectFile(newFile);
+                showNotification('File created successfully', 'success');
+            }
+        }
+
+        // Export images
+        function exportImages() {
+            showNotification('Exporting images...', 'success');
+        }
+
+        // View components
+        function viewComponents() {
+            showNotification('Viewing components...', 'success');
+        }
+
+        // View styles
+        function viewStyles() {
+            showNotification('Viewing styles...', 'success');
+        }
+
+        // View comments
+        function viewComments() {
+            showNotification('Viewing comments...', 'success');
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // File search
+            document.getElementById('file-search').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const fileItems = document.querySelectorAll('.file-item');
+                
+                fileItems.forEach(item => {
+                    const name = item.querySelector('.file-name').textContent.toLowerCase();
+                    if (name.includes(query)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initWorkspace);
+    </script>
+</body>
+</html>

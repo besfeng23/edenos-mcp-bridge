@@ -57,7 +57,7 @@ app.get('/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    features: ['notion', 'linear', 'github', 'firebase', 'gcp', 'fun-features']
+    features: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'fun-features']
   });
 });
 
@@ -68,7 +68,7 @@ app.get('/metrics', (req, res) => {
     memory: process.memoryUsage(),
     timestamp: new Date().toISOString(),
     tools: getAllTools().length,
-    services: ['notion', 'linear', 'github', 'firebase', 'gcp']
+    services: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier']
   });
 });
 
@@ -94,6 +94,8 @@ app.get('/', (req, res) => {
       github: 'GitHub code management',
       firebase: 'Firebase cloud services',
       gcp: 'Google Cloud Platform infrastructure',
+      figma: 'Figma design management',
+      zapier: 'Zapier automation workflows',
       fun: 'Cool features for normal people',
       controlPanel: 'React control panel',
       wowControl: 'Sci-fi features that make people gasp'
@@ -138,6 +140,12 @@ app.post('/tools', async (req, res) => {
       gcp: {
         projectId: process.env.GCP_PROJECT_ID || 'demo-project',
         serviceAccountKey: process.env.GCP_SERVICE_ACCOUNT_KEY || 'demo-key'
+      },
+      figma: {
+        accessToken: process.env.FIGMA_ACCESS_TOKEN || 'demo-token'
+      },
+      zapier: {
+        apiKey: process.env.ZAPIER_API_KEY || 'demo-key'
       }
     });
 
@@ -421,6 +429,85 @@ const tools: Tool[] = [
       },
       required: ['serviceName', 'imageUrl']
     }
+  },
+  // Figma tools
+  {
+    name: 'figma.get-file',
+    description: 'Get a Figma file by key',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileKey: { type: 'string', description: 'Figma file key' },
+        version: { type: 'string', description: 'File version' },
+        ids: { type: 'array', items: { type: 'string' }, description: 'Node IDs to retrieve' }
+      },
+      required: ['fileKey']
+    }
+  },
+  {
+    name: 'figma.get-file-images',
+    description: 'Get images from a Figma file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileKey: { type: 'string', description: 'Figma file key' },
+        ids: { type: 'array', items: { type: 'string' }, description: 'Node IDs to export' },
+        format: { type: 'string', enum: ['jpg', 'png', 'svg', 'pdf'], description: 'Image format' }
+      },
+      required: ['fileKey', 'ids']
+    }
+  },
+  {
+    name: 'figma.post-comment',
+    description: 'Post a comment to a Figma file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        fileKey: { type: 'string', description: 'Figma file key' },
+        message: { type: 'string', description: 'Comment message' },
+        client_meta: { type: 'object', description: 'Comment position metadata' }
+      },
+      required: ['fileKey', 'message', 'client_meta']
+    }
+  },
+  // Zapier tools
+  {
+    name: 'zapier.get-zaps',
+    description: 'Get all Zapier zaps',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Number of results per page' },
+        offset: { type: 'number', description: 'Number of results to skip' }
+      }
+    }
+  },
+  {
+    name: 'zapier.create-zap',
+    description: 'Create a new Zapier zap',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Zap title' },
+        description: { type: 'string', description: 'Zap description' },
+        triggerId: { type: 'number', description: 'Trigger ID' },
+        actionId: { type: 'number', description: 'Action ID' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'zapier.update-zap',
+    description: 'Update a Zapier zap',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        zapId: { type: 'number', description: 'Zap ID' },
+        title: { type: 'string', description: 'New title' },
+        status: { type: 'string', enum: ['on', 'off'], description: 'New status' }
+      },
+      required: ['zapId']
+    }
   }
 ];
 
@@ -451,6 +538,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       gcp: {
         projectId: process.env.GCP_PROJECT_ID || 'demo-project',
         serviceAccountKey: process.env.GCP_SERVICE_ACCOUNT_KEY || 'demo-key'
+      },
+      figma: {
+        accessToken: process.env.FIGMA_ACCESS_TOKEN || 'demo-token'
+      },
+      zapier: {
+        apiKey: process.env.ZAPIER_API_KEY || 'demo-key'
       }
     });
 

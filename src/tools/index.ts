@@ -7,6 +7,8 @@ export * from './linear';
 export * from './github';
 export * from './firebase';
 export * from './gcp';
+export * from './figma';
+export * from './zapier';
 
 // Tool registry for easy lookup
 export const toolRegistry = {
@@ -61,7 +63,32 @@ export const toolRegistry = {
   'gcp.create-ai-platform-model': { handler: 'gcp', description: 'Create an AI Platform model' },
   'gcp.list-bigquery-datasets': { handler: 'gcp', description: 'List BigQuery datasets' },
   'gcp.create-bigquery-dataset': { handler: 'gcp', description: 'Create a BigQuery dataset' },
-  'gcp.get-project-info': { handler: 'gcp', description: 'Get GCP project information' }
+  'gcp.get-project-info': { handler: 'gcp', description: 'Get GCP project information' },
+
+  // Figma tools
+  'figma.get-file': { handler: 'figma', description: 'Get a Figma file by key' },
+  'figma.get-file-images': { handler: 'figma', description: 'Get images from a Figma file' },
+  'figma.get-file-comments': { handler: 'figma', description: 'Get comments from a Figma file' },
+  'figma.post-comment': { handler: 'figma', description: 'Post a comment to a Figma file' },
+  'figma.get-team-projects': { handler: 'figma', description: 'Get projects from a Figma team' },
+  'figma.get-project-files': { handler: 'figma', description: 'Get files from a Figma project' },
+  'figma.get-team-components': { handler: 'figma', description: 'Get components from a Figma team' },
+  'figma.get-file-components': { handler: 'figma', description: 'Get components from a Figma file' },
+  'figma.get-team-styles': { handler: 'figma', description: 'Get styles from a Figma team' },
+  'figma.get-file-styles': { handler: 'figma', description: 'Get styles from a Figma file' },
+  'figma.get-me': { handler: 'figma', description: 'Get current Figma user' },
+
+  // Zapier tools
+  'zapier.get-zaps': { handler: 'zapier', description: 'Get all Zapier zaps' },
+  'zapier.get-zap': { handler: 'zapier', description: 'Get a Zapier zap by ID' },
+  'zapier.create-zap': { handler: 'zapier', description: 'Create a new Zapier zap' },
+  'zapier.update-zap': { handler: 'zapier', description: 'Update a Zapier zap' },
+  'zapier.delete-zap': { handler: 'zapier', description: 'Delete a Zapier zap' },
+  'zapier.get-zap-runs': { handler: 'zapier', description: 'Get runs for a Zapier zap' },
+  'zapier.get-apps': { handler: 'zapier', description: 'Get available Zapier apps' },
+  'zapier.get-app-triggers': { handler: 'zapier', description: 'Get triggers for a Zapier app' },
+  'zapier.get-app-actions': { handler: 'zapier', description: 'Get actions for a Zapier app' },
+  'zapier.get-me': { handler: 'zapier', description: 'Get current Zapier user' }
 };
 
 // Configuration schemas for each service
@@ -89,6 +116,14 @@ export const serviceConfigs = {
     serviceAccountKey: { type: 'string', required: false, description: 'GCP service account key' },
     region: { type: 'string', required: false, default: 'us-central1', description: 'GCP region' },
     zone: { type: 'string', required: false, default: 'us-central1-a', description: 'GCP zone' }
+  },
+  figma: {
+    accessToken: { type: 'string', required: true, description: 'Figma access token' },
+    baseUrl: { type: 'string', required: false, default: 'https://api.figma.com/v1', description: 'Figma API base URL' }
+  },
+  zapier: {
+    apiKey: { type: 'string', required: true, description: 'Zapier API key' },
+    baseUrl: { type: 'string', required: false, default: 'https://zapier.com/api/v1', description: 'Zapier API base URL' }
   }
 };
 
@@ -126,6 +161,14 @@ export async function executeTool(tool: string, args: any, config: any) {
     case 'gcp':
       const { executeGCPTool } = await import('./gcp');
       return await executeGCPTool(tool, args, serviceConfig);
+    
+    case 'figma':
+      const { executeFigmaTool } = await import('./figma');
+      return await executeFigmaTool(tool, args, serviceConfig);
+    
+    case 'zapier':
+      const { executeZapierTool } = await import('./zapier');
+      return await executeZapierTool(tool, args, serviceConfig);
     
     default:
       throw new Error(`Unknown handler: ${handler}`);
