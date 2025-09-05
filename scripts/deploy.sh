@@ -1,54 +1,56 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "🚀 Deploying EdenOS MCP Bridge"
-echo "==============================="
+PROJECT_ID="${GCP_PROJECT_ID:-agile-anagram-469914-e2}"
+REGION="${GCP_REGION:-asia-southeast1}"
+SERVICE="${CLOUD_RUN_SERVICE:-edenos-mcp-bridge}"
+REPO="${ARTIFACT_REPO:-containers}"
+AR_HOST="${REGION}-docker.pkg.dev"
+TAG="${TAG:-$(git rev-parse --short HEAD 2>/dev/null || date +%s)}"
+IMAGE="${AR_HOST}/${PROJECT_ID}/${REPO}/${SERVICE}:${TAG}"
 
-# Configuration
-REG="asia-southeast1"
-SERVICE="edenos-mcp-bridge"
-PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project)}"
-SA="edenos-mcp-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+echo "🧱 Building image ${IMAGE}"
+docker build --pull --no-cache -t "${IMAGE}" .
 
-echo "🔧 Configuration:"
-echo "   Region: $REG"
-echo "   Service: $SERVICE"
-echo "   Project: $PROJECT_ID"
-echo "   Service Account: $SA"
+echo "⬆️  Pushing"
+gcloud auth configure-docker "${AR_HOST}" -q
+docker push "${IMAGE}"
 
-# Build the application
-echo "📦 Building application..."
-pnpm run build
+echo "🔐 Attaching secrets"
+SA="${SERVICE}-sa"
+gcloud iam service-accounts create "${SA}" --project "${PROJECT_ID}" --quiet || true
 
-# Build Docker image
-echo "🐳 Building Docker image..."
-IMG="asia-southeast1-docker.pkg.dev/${PROJECT_ID}/bridge/${SERVICE}"
-gcloud builds submit --tag "$IMG"
+# Minimum roles; expand only as needed
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${SA}@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/run.invoker" --quiet || true
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${SA}@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" --quiet || true
 
-# Deploy to Cloud Run
-echo "🚀 Deploying to Cloud Run..."
-gcloud run deploy "$SERVICE" \
-  --image "$IMG" \
-  --region "$REG" \
+echo "🚀 Deploy canary (10%)"
+gcloud run deploy "${SERVICE}" \
+  --project "${PROJECT_ID}" --region "${REGION}" \
+  --image "${IMAGE}" \
+  --service-account "${SA}@${PROJECT_ID}.iam.gserviceaccount.com" \
   --platform managed \
-  --service-account "$SA" \
   --allow-unauthenticated \
-  --max-instances 10 \
-  --cpu 1 \
-  --memory 512Mi \
-  --set-env-vars "GOOGLE_CLOUD_PROJECT=${PROJECT_ID}" \
-  --set-env-vars "EDENOS_ENV=${EDENOS_ENV:-staging}"
+  --concurrency 80 \
+  --cpu 1 --memory 512Mi \
+  --min-instances 1 --max-instances 20 \
+  --set-env-vars "NODE_ENV=production,MCP_ENV_TAG=${MCP_ENV_TAG:-mcpmaster},RATE_RPS=${RATE_RPS:-5},RATE_BURST=${RATE_BURST:-10},OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-},OTEL_RESOURCE_SERVICE_NAME=${OTEL_RESOURCE_SERVICE_NAME:-edenos-mcp-bridge}" \
+  --set-secrets "SERVICE_ACCOUNT_JSON=${SECRET__SERVICE_ACCOUNT_JSON:-},JWT_SIGNING_KEY=${SECRET__JWT_SIGNING_KEY:-}" \
+  --traffic latest=10 || { echo "❌ deploy failed"; exit 1; }
 
-echo "✅ Deployment completed successfully!"
-echo "🌐 Service URL:"
-gcloud run services describe "$SERVICE" --region="$REG" --format="value(status.url)"
+URL="$(gcloud run services describe "${SERVICE}" --region "${REGION}" --format='value(status.url)')"
+echo "🌐 Service URL: ${URL}"
 
-# Update CORS for the console
-echo "🔐 Updating CORS for console access..."
-CONSOLE_ORIGIN="${MCP_CONSOLE_ORIGIN:-https://mcpmaster-web-app.web.app}"
-gcloud run services update "$SERVICE" \
-  --region "$REG" \
-  --set-env-vars "ALLOWED_ORIGINS=${CONSOLE_ORIGIN}"
+echo "🩺 Smoke check"
+curl -fsS "${URL}/health" || { echo "❌ health failed"; exit 2; }
 
-echo "🎯 MCP Bridge is ready to receive requests!"
+echo "📈 Shift traffic to 100%"
+REV="$(gcloud run services describe "${SERVICE}" --region "${REGION}" --format='value(status.latestReadyRevisionName)')"
+gcloud run services update-traffic "${SERVICE}" --region "${REGION}" --to-revisions "${REV}=100"
+
+echo "✅ Deployed ${REV} to 100%"
 

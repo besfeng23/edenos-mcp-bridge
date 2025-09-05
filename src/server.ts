@@ -4,11 +4,12 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { 
   CallToolRequestSchema, 
-  ListToolsRequestSchema,
-  Tool 
+  ListToolsRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 import { createServer } from 'http';
 import { URL } from 'url';
+import express from 'express';
+import path from 'path';
 
 // Import all tools
 import { gcpTools } from './tools/gcp.js';
@@ -23,10 +24,13 @@ import { authTools } from './tools/auth.js';
 // Guardrail verifier
 import { canRun } from './tools/guard.js';
 
+// Fun features
+import { coolRouter, startCoolSockets, registerCoolMcp } from '../plugins/fun/index.js';
+
 // Configuration
 const PORT = process.env.PORT || 8080;
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['https://mcpmaster-web-app.web.app'];
+const ALLOWED_ORIGINS = process.env.VITE_ALLOWED_ORIGINS?.split(',') || ['https://agile-anagram-469914-e2.web.app'];
 
 // MCP Configuration
 const MCP_ACTION_CURSOR_DISPATCH = process.env.MCP_ACTION_CURSOR_DISPATCH || 'cursor.dispatch';
@@ -84,7 +88,7 @@ function checkRateLimit(identifier: string): boolean {
 }
 
 // Combine all tools
-const allTools: Tool[] = [
+const allTools = [
   ...gcpTools,
   ...firebaseTools,
   ...firestoreTools,
@@ -326,11 +330,14 @@ async function executeAuthTool(name: string, args: any) {
 
 // HTTP server for health checks and metrics
 function createHttpServer() {
-  const httpServer = createServer((req, res) => {
-    const url = new URL(req.url || '/', `http://${req.headers.host}`);
-    const path = url.pathname;
-    
-    // CORS headers
+  const app = express();
+  
+  // Middleware
+  app.use(express.json());
+  app.use(express.static(path.join(__dirname, '../web')));
+  
+  // CORS headers
+  app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (origin && ALLOWED_ORIGINS.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
@@ -343,24 +350,41 @@ function createHttpServer() {
       res.end();
       return;
     }
-    
-    // Health check endpoint
-    if (path === '/health') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-        tools: allTools.length
-      }));
-      return;
+    next();
+  });
+  
+  // Admin guard for fun features
+  app.use("/cool", (req, res, next) => {
+    const token = (req.headers.authorization || "").replace("Bearer ", "");
+    if (token !== process.env.BRIDGE_ADMIN_TOKEN) {
+      return res.status(401).json({ error: "unauthorized" });
     }
-    
-    // Metrics endpoint
-    if (path === '/metrics') {
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.end(`# EdenOS MCP Bridge Metrics
+    next();
+  });
+  
+  // Mount fun features
+  app.use("/cool", coolRouter);
+  
+  // Static UIs
+  app.use("/live-ops", express.static(path.join(__dirname, "../web/live-ops")));
+  app.use("/memgraph", express.static(path.join(__dirname, "../web/memgraph")));
+  app.use("/audit-cinema", express.static(path.join(__dirname, "../web/audit-cinema")));
+  
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      tools: allTools.length
+    });
+  });
+  
+  // Metrics endpoint
+  app.get('/metrics', (req, res) => {
+    res.set('Content-Type', 'text/plain');
+    res.end(`# EdenOS MCP Bridge Metrics
 # HELP mcp_tools_total Total number of available tools
 # TYPE mcp_tools_total gauge
 mcp_tools_total ${allTools.length}
@@ -369,35 +393,36 @@ mcp_tools_total ${allTools.length}
 # TYPE mcp_rate_limit_hits_total counter
 mcp_rate_limit_hits_total ${Array.from(rateLimitMap.values()).reduce((sum, limit) => sum + limit.count, 0)}
 `);
-      return;
-    }
-    
-    // Root endpoint
-    if (path === '/') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        name: `EdenOS MCP Bridge (${MCP_ENV_TAG})`,
-        version: '1.0.0',
-        status: 'running',
-        mcp: {
-          actionCursorDispatch: MCP_ACTION_CURSOR_DISPATCH,
-          envTag: MCP_ENV_TAG
-        },
-        endpoints: {
-          health: '/health',
-          metrics: '/metrics',
-          tools: '/tools'
-        }
-      }));
-      return;
-    }
-    
-    // 404 for unknown paths
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
   });
   
-  return httpServer;
+  // Root endpoint
+  app.get('/', (req, res) => {
+    res.json({
+      name: `EdenOS MCP Bridge (${MCP_ENV_TAG})`,
+      version: '1.0.0',
+      status: 'running',
+      mcp: {
+        actionCursorDispatch: MCP_ACTION_CURSOR_DISPATCH,
+        envTag: MCP_ENV_TAG
+      },
+      endpoints: {
+        health: '/health',
+        metrics: '/metrics',
+        tools: '/tools',
+        fun: '/cool',
+        liveOps: '/live-ops',
+        memgraph: '/memgraph',
+        auditCinema: '/audit-cinema'
+      }
+    });
+  });
+  
+  // 404 for unknown paths
+  app.use('*', (req, res) => {
+    res.status(404).json({ error: 'Not found' });
+  });
+  
+  return app;
 }
 
 // Start server
@@ -410,17 +435,25 @@ async function main() {
       logLevel: LOG_LEVEL
     });
     
-    // Start HTTP server for health checks
-    const httpServer = createHttpServer();
-    httpServer.listen(PORT, () => {
+    // Create Express app
+    const app = createHttpServer();
+    
+    // Start HTTP server for health checks and fun features
+    const httpServer = app.listen(PORT, () => {
       log('info', `HTTP server listening on port ${PORT}`);
     });
+    
+    // Start fun websockets
+    startCoolSockets(httpServer);
+    
+    // Register fun MCP tools
+    registerCoolMcp(server);
     
     // Start MCP server
     const transport = new StdioServerTransport();
     await server.connect(transport);
     
-    log('info', 'EdenOS MCP Bridge started successfully');
+    log('info', 'EdenOS MCP Bridge started successfully with fun features');
     
     // Graceful shutdown
     process.on('SIGTERM', () => {

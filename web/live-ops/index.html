@@ -1,0 +1,163 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Live Ops Theater</title>
+<style>
+  body {
+    margin: 0;
+    background: #0a0f18;
+    color: #cbd5e1;
+    font: 14px ui-monospace, monospace;
+    overflow: hidden;
+  }
+  
+  .status-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.8);
+    padding: 8px 16px;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #10b981;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+</style>
+
+<div class="status-bar">
+  <div>🚀 EdenOS Live Ops Theater</div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <div class="status-indicator" id="ws-status"></div>
+    <span id="revision-count">0 revisions</span>
+  </div>
+</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+
+addEventListener('resize', resize);
+resize();
+
+const rockets = new Map();
+let revisionCount = 0;
+
+function upsert(e) {
+  const id = e.name;
+  if (!rockets.has(id)) {
+    rockets.set(id, {
+      y: canvas.height,
+      x: Math.random() * canvas.width,
+      v: 1 + Math.random() * 2,
+      status: e.status,
+      traffic: e.traffic || 0
+    });
+  }
+  
+  const r = rockets.get(id);
+  r.status = e.status;
+  r.traffic = e.traffic || 0;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw stars background
+  ctx.fillStyle = '#374151';
+  for (let i = 0; i < 100; i++) {
+    const x = (i * 37) % canvas.width;
+    const y = (i * 73) % canvas.height;
+    ctx.fillRect(x, y, 1, 1);
+  }
+  
+  for (const r of rockets.values()) {
+    // explode if inactive + had traffic
+    if (r.status !== "ACTIVE" && r.y < canvas.height * 0.4) {
+      explosion(r.x, r.y);
+      r.y = canvas.height;
+      continue;
+    }
+    
+    r.y -= r.v;
+    if (r.y < 50) r.y = canvas.height;
+    
+    // Draw rocket based on traffic
+    const size = Math.max(3, Math.min(8, r.traffic / 10));
+    const color = r.status === "ACTIVE" ? "#7dd3fc" : "#6b7280";
+    
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(r.x, r.y);
+    ctx.lineTo(r.x - size, r.y + size * 3);
+    ctx.lineTo(r.x + size, r.y + size * 3);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Draw flame
+    if (r.status === "ACTIVE") {
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(r.x, r.y + size * 3);
+      ctx.lineTo(r.x - size/2, r.y + size * 4);
+      ctx.lineTo(r.x + size/2, r.y + size * 4);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  
+  requestAnimationFrame(draw);
+}
+
+function explosion(x, y) {
+  ctx.fillStyle = "#ef4444";
+  for (let i = 0; i < 50; i++) {
+    const angle = (i / 50) * Math.PI * 2;
+    const radius = Math.random() * 20;
+    const px = x + Math.cos(angle) * radius;
+    const py = y + Math.sin(angle) * radius;
+    ctx.fillRect(px, py, 2, 2);
+  }
+}
+
+draw();
+
+// WebSocket connection
+const ws = new WebSocket((location.protocol === "https:" ? "wss:" : "ws:") + "//" + location.host + "/cool/ws/live-ops");
+
+ws.onopen = () => {
+  document.getElementById('ws-status').style.background = '#10b981';
+};
+
+ws.onclose = () => {
+  document.getElementById('ws-status').style.background = '#ef4444';
+};
+
+ws.onmessage = ev => {
+  const msg = JSON.parse(ev.data);
+  if (msg.type === "batch") {
+    revisionCount = msg.events.length;
+    document.getElementById('revision-count').textContent = `${revisionCount} revisions`;
+    msg.events.forEach(upsert);
+  }
+};
+</script>

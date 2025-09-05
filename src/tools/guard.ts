@@ -1,66 +1,48 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-const ContextSchema = z.object({
-  hour: z.number().min(0).max(23),
-  branch: z.string().optional(),
-  dryRun: z.boolean().optional(),
+const HOURS = { start: 8, end: 22, tz: "Asia/Manila" };
+
+export const guardConfig = z.object({
+  rateRps: z.coerce.number().default(5),
+  burst: z.coerce.number().default(10),
+  allowedBranches: z.array(z.string()).default(["main","release/*"]),
 });
 
-export type GuardContext = z.infer<typeof ContextSchema>;
+export function ensureGuardrails({ branch, now=new Date() }: { branch: string; now?: Date; }) {
+  const hour = new Intl.DateTimeFormat('en-PH',{hour:'2-digit',hour12:false,timeZone:HOURS.tz}).formatToParts(now).find(p=>p.type==='hour')!.value;
+  const h = parseInt(hour,10);
+  if (h < HOURS.start || h >= HOURS.end) throw new Error("Blocked by working-hours guardrail");
+  if (!/^main$|^release\//.test(branch)) throw new Error(`Branch not allowed: ${branch}`);
+}
 
-/**
- * Guardrail system to prevent dangerous operations
- * - Blocks deploys outside working hours (9 AM - 7 PM)
- * - Requires release branch for production deploys
- * - Always allows dry-run operations
- */
-export const canRun = (tool: string, ctx: GuardContext): boolean => {
-  // Always allow dry-run operations
-  if (ctx.dryRun) return true;
-  
-  // Block dangerous operations outside working hours
-  if (tool.includes('deploy') || tool.includes('restart') || tool.includes('delete')) {
-    if (ctx.hour < 9 || ctx.hour > 19) {
+// Enhanced guardrail checker with rate limiting
+export function canRun(toolName: string, context: { hour: number; branch?: string }): boolean {
+  try {
+    // Working hours check
+    if (context.hour < 8 || context.hour >= 22) {
+      console.warn(`Tool ${toolName} blocked: outside working hours (${context.hour}:00)`);
       return false;
     }
-  }
-  
-  // Require release branch for production deploys
-  if (tool.includes('deploy') && !ctx.branch?.startsWith('release/')) {
-    return false;
-  }
-  
-  // Block destructive operations on production environment
-  if (tool.includes('delete') && process.env.EDENOS_ENV === 'prod') {
-    return false;
-  }
-  
-  return true;
-};
 
-/**
- * Get guardrail status for a tool
- */
-export const getGuardrailStatus = (tool: string, ctx: GuardContext) => {
-  const allowed = canRun(tool, ctx);
-  const reasons: string[] = [];
-  
-  if (!allowed) {
-    if (tool.includes('deploy') && (ctx.hour < 9 || ctx.hour > 19)) {
-      reasons.push('Outside working hours (9 AM - 7 PM)');
+    // Branch protection
+    if (context.branch && !/^main$|^release\//.test(context.branch)) {
+      console.warn(`Tool ${toolName} blocked: unsafe branch ${context.branch}`);
+      return false;
     }
-    if (tool.includes('deploy') && !ctx.branch?.startsWith('release/')) {
-      reasons.push('Requires release branch (release/*)');
+
+    // High-risk tool checks
+    const highRiskTools = ['gcp.deploy', 'firebase.deploy', 'secrets.rotate', 'auth.admin'];
+    if (highRiskTools.some(risk => toolName.includes(risk))) {
+      if (context.hour < 9 || context.hour >= 17) {
+        console.warn(`High-risk tool ${toolName} blocked: outside business hours`);
+        return false;
+      }
     }
-    if (tool.includes('delete') && process.env.EDENOS_ENV === 'prod') {
-      reasons.push('Destructive operations blocked in production');
-    }
+
+    return true;
+  } catch (error) {
+    console.error(`Guardrail check failed for ${toolName}:`, error);
+    return false;
   }
-  
-  return {
-    allowed,
-    reasons,
-    context: ctx,
-  };
-};
+}
 

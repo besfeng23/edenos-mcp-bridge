@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdenOS Magic Mirror - Jarvis Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #0a0f18 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .mirror-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: 
+                radial-gradient(circle at 30% 30%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 70%, rgba(0, 200, 255, 0.1) 0%, transparent 50%);
+        }
+
+        .mirror-frame {
+            position: relative;
+            width: 90vw;
+            height: 90vh;
+            border: 4px solid #00ff88;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 
+                0 0 50px rgba(0, 255, 136, 0.3),
+                inset 0 0 50px rgba(0, 255, 136, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mirror-header {
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.2), rgba(0, 200, 255, 0.2));
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #00ff88;
+        }
+
+        .mirror-title {
+            font-size: 2rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ff88;
+            margin-bottom: 10px;
+        }
+
+        .mirror-subtitle {
+            font-size: 1rem;
+            color: #88ffaa;
+            opacity: 0.8;
+        }
+
+        .jarvis-avatar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #00ff88, #0088ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            animation: avatarPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes avatarPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .mirror-content {
+            flex: 1;
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .dashboard-panel {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #00ff88;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.1), transparent);
+            animation: scan 4s infinite;
+        }
+
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 10px;
+            border: 1px solid #00ff88;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ff88;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chart-container {
+            height: 200px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #00ff88, #88ffaa, #00ff88);
+            animation: chartMove 3s infinite linear;
+        }
+
+        @keyframes chartMove {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .status-indicators {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+
+        .status-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 10px;
+            border: 1px solid #00ff88;
+            min-width: 80px;
+        }
+
+        .status-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00ff88;
+            margin-bottom: 5px;
+            animation: blink 2s infinite;
+        }
+
+        .status-dot.warning {
+            background: #ffaa00;
+        }
+
+        .status-dot.error {
+            background: #ff4444;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .jarvis-message {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff88;
+            border-radius: 15px;
+            padding: 20px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            animation: messageGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes messageGlow {
+            0% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.3); }
+            100% { box-shadow: 0 0 40px rgba(0, 255, 136, 0.6); }
+        }
+
+        .message-text {
+            margin-bottom: 10px;
+        }
+
+        .message-time {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .voice-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(0, 255, 136, 0.2);
+            border: 2px solid #00ff88;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .voice-indicator:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+
+        .voice-indicator.listening {
+            animation: pulse 1s infinite;
+            background: rgba(255, 68, 68, 0.2);
+            border-color: #ff4444;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            color: #00ff88;
+            font-size: 0.9rem;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .notification.warning {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+    </style>
+</head>
+<body>
+    <div class="mirror-container">
+        <div class="mirror-frame">
+            <div class="mirror-header">
+                <div class="mirror-title">EDENOS MAGIC MIRROR</div>
+                <div class="mirror-subtitle">AI-Powered System Interface</div>
+                <div class="jarvis-avatar">🤖</div>
+            </div>
+
+            <div class="voice-indicator" id="voice-btn" onclick="toggleVoice()">
+                🎤
+            </div>
+
+            <div class="mirror-content">
+                <div class="dashboard-panel">
+                    <div class="panel-title">System Health</div>
+                    <div class="metric-grid">
+                        <div class="metric-item">
+                            <div class="metric-value" id="cpu-usage">85%</div>
+                            <div class="metric-label">CPU Usage</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="memory-usage">72%</div>
+                            <div class="metric-label">Memory</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="disk-usage">45%</div>
+                            <div class="metric-label">Disk Space</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="network-usage">1.2GB/s</div>
+                            <div class="metric-label">Network</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-line"></div>
+                    </div>
+                </div>
+
+                <div class="dashboard-panel">
+                    <div class="panel-title">Transaction Flow</div>
+                    <div class="metric-grid">
+                        <div class="metric-item">
+                            <div class="metric-value" id="transactions">1,247</div>
+                            <div class="metric-label">Total Today</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="success-rate">99.2%</div>
+                            <div class="metric-label">Success Rate</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="avg-response">45ms</div>
+                            <div class="metric-label">Avg Response</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="active-users">342</div>
+                            <div class="metric-label">Active Users</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-line"></div>
+                    </div>
+                </div>
+
+                <div class="dashboard-panel">
+                    <div class="panel-title">Sentiment Trends</div>
+                    <div class="metric-grid">
+                        <div class="metric-item">
+                            <div class="metric-value" id="positive-sentiment">68%</div>
+                            <div class="metric-label">Positive</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="neutral-sentiment">25%</div>
+                            <div class="metric-label">Neutral</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="negative-sentiment">7%</div>
+                            <div class="metric-label">Negative</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="sentiment-trend">↗️</div>
+                            <div class="metric-label">Trend</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-line"></div>
+                    </div>
+                </div>
+
+                <div class="dashboard-panel">
+                    <div class="panel-title">Service Status</div>
+                    <div class="status-indicators">
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <div>Bridge</div>
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <div>API</div>
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot warning"></div>
+                            <div>Database</div>
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <div>Cache</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-line"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="jarvis-message" id="jarvis-message">
+                <div class="message-text" id="message-text">
+                    Hello! I'm Jarvis, your AI assistant. The system is running optimally with 99.2% uptime. 
+                    All services are operational and sentiment analysis shows positive trends. 
+                    How can I assist you today?
+                </div>
+                <div class="message-time" id="message-time">
+                    Last updated: <span id="current-time"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script>
+        let voiceActive = false;
+        let recognition = null;
+        let messageIndex = 0;
+
+        // Jarvis messages
+        const jarvisMessages = [
+            "Hello! I'm Jarvis, your AI assistant. The system is running optimally with 99.2% uptime. All services are operational and sentiment analysis shows positive trends. How can I assist you today?",
+            "System status update: All green across the board. Transaction volume is up 15% from yesterday. Memory usage is stable at 72%. Everything is running smoothly.",
+            "I've detected a minor performance fluctuation in the database service. No action required - it's within normal parameters. Monitoring continues.",
+            "Great news! The latest deployment was successful. Response times have improved by 12%. User satisfaction metrics are trending upward.",
+            "Security scan complete. All systems are secure with no vulnerabilities detected. Firewall is active and protecting all endpoints.",
+            "The sentiment analysis shows users are very happy with the recent updates. Positive feedback is at 68%, which is above our target of 65%."
+        ];
+
+        // Initialize voice recognition
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = function(event) {
+                const command = event.results[0][0].transcript.toLowerCase();
+                handleVoiceCommand(command);
+            };
+
+            recognition.onend = function() {
+                voiceActive = false;
+                document.getElementById('voice-btn').classList.remove('listening');
+            };
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            const metrics = [
+                { id: 'cpu-usage', values: ['85%', '78%', '92%', '88%'] },
+                { id: 'memory-usage', values: ['72%', '68%', '75%', '70%'] },
+                { id: 'disk-usage', values: ['45%', '43%', '47%', '44%'] },
+                { id: 'network-usage', values: ['1.2GB/s', '0.8GB/s', '1.5GB/s', '1.1GB/s'] },
+                { id: 'transactions', values: ['1,247', '1,189', '1,305', '1,278'] },
+                { id: 'success-rate', values: ['99.2%', '99.5%', '98.8%', '99.3%'] },
+                { id: 'avg-response', values: ['45ms', '42ms', '48ms', '44ms'] },
+                { id: 'active-users', values: ['342', '298', '387', '356'] },
+                { id: 'positive-sentiment', values: ['68%', '65%', '71%', '69%'] },
+                { id: 'neutral-sentiment', values: ['25%', '28%', '22%', '24%'] },
+                { id: 'negative-sentiment', values: ['7%', '7%', '7%', '7%'] }
+            ];
+
+            metrics.forEach(metric => {
+                const element = document.getElementById(metric.id);
+                if (element) {
+                    const randomValue = metric.values[Math.floor(Math.random() * metric.values.length)];
+                    element.textContent = randomValue;
+                }
+            });
+
+            // Update sentiment trend
+            const trendElement = document.getElementById('sentiment-trend');
+            const trends = ['↗️', '↘️', '→', '↗️'];
+            trendElement.textContent = trends[Math.floor(Math.random() * trends.length)];
+        }
+
+        // Update Jarvis message
+        function updateJarvisMessage() {
+            const messageText = document.getElementById('message-text');
+            const currentTime = document.getElementById('current-time');
+            
+            messageText.textContent = jarvisMessages[messageIndex];
+            currentTime.textContent = new Date().toLocaleTimeString();
+            
+            messageIndex = (messageIndex + 1) % jarvisMessages.length;
+        }
+
+        // Voice commands
+        function toggleVoice() {
+            if (!recognition) {
+                showNotification('Voice recognition not supported', 'error');
+                return;
+            }
+
+            if (voiceActive) {
+                recognition.stop();
+            } else {
+                recognition.start();
+                voiceActive = true;
+                document.getElementById('voice-btn').classList.add('listening');
+                showNotification('Listening... Speak now', 'warning');
+            }
+        }
+
+        function handleVoiceCommand(command) {
+            showNotification(`Command: "${command}"`, 'success');
+            
+            if (command.includes('status') || command.includes('health')) {
+                updateMetrics();
+                updateJarvisMessage();
+            } else if (command.includes('deploy') || command.includes('launch')) {
+                showNotification('Initiating deployment sequence...', 'warning');
+                setTimeout(() => {
+                    showNotification('Deployment successful!', 'success');
+                    updateJarvisMessage();
+                }, 3000);
+            } else if (command.includes('help')) {
+                showNotification('Available commands: status, health, deploy, launch', 'warning');
+            } else {
+                updateJarvisMessage();
+            }
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize the magic mirror
+        function initMirror() {
+            updateMetrics();
+            updateJarvisMessage();
+            
+            // Update metrics every 5 seconds
+            setInterval(updateMetrics, 5000);
+            
+            // Update Jarvis message every 30 seconds
+            setInterval(updateJarvisMessage, 30000);
+            
+            // Show welcome message
+            setTimeout(() => {
+                showNotification('Magic Mirror activated. Hello!', 'success');
+            }, 1000);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initMirror);
+    </script>
+</body>
+</html>

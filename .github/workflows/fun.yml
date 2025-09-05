@@ -1,0 +1,89 @@
+name: fun-ops
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: AI Code Review
+        env:
+          BRIDGE: ${{ secrets.BRIDGE_URL }}
+          BRIDGE_ADMIN_TOKEN: ${{ secrets.BRIDGE_ADMIN_TOKEN }}
+        run: |
+          echo "🤖 Running AI code review..."
+          DIFF="$(git diff origin/main...HEAD)"
+          if [ -n "$DIFF" ]; then
+            curl -s -X POST "$BRIDGE/cool/auto/plan" \
+              -H "Authorization: Bearer $BRIDGE_ADMIN_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"diff\":$(jq -Rs . <<< \"$DIFF\")}" | jq .
+          else
+            echo "No changes to review"
+          fi
+
+  ephemeral-deploy:
+    if: contains(github.event.head_commit.message, '[ephemeral]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trigger Ephemeral Deploy
+        env:
+          BRIDGE: ${{ secrets.BRIDGE_URL }}
+          BRIDGE_ADMIN_TOKEN: ${{ secrets.BRIDGE_ADMIN_TOKEN }}
+          RUN_SERVICE: ${{ secrets.RUN_SERVICE }}
+          IMAGE: ${{ secrets.DEPLOY_IMAGE }}
+        run: |
+          echo "🚀 Triggering ephemeral deploy..."
+          curl -s -X POST "$BRIDGE/fun/deploy/ephemeral" \
+            -H "Authorization: Bearer $BRIDGE_ADMIN_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"service\":\"$RUN_SERVICE\",\"image\":\"$IMAGE\",\"ttlSec\":600}" | jq .
+
+  chaos-test:
+    if: contains(github.event.head_commit.message, '[chaos]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inject Chaos
+        env:
+          BRIDGE: ${{ secrets.BRIDGE_URL }}
+          BRIDGE_ADMIN_TOKEN: ${{ secrets.BRIDGE_ADMIN_TOKEN }}
+        run: |
+          echo "🎲 Injecting chaos..."
+          curl -s -X POST "$BRIDGE/cool/chaos" \
+            -H "Authorization: Bearer $BRIDGE_ADMIN_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"failPercent":60}' | jq .
+          
+          echo "🔥 Sending roast..."
+          curl -s -X POST "$BRIDGE/fun/roast" \
+            -H "Authorization: Bearer $BRIDGE_ADMIN_TOKEN" | jq .
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[ephemeral]')
+    runs-on: ubuntu-latest
+    needs: [review]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIP }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+      - name: Deploy to Cloud Run
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          CLOUD_RUN_SERVICE: ${{ secrets.CLOUD_RUN_SERVICE }}
+        run: |
+          echo "🚀 Deploying to production..."
+          ./scripts/deploy.sh

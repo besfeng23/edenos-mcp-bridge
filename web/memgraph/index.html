@@ -1,0 +1,224 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>MemGraph</title>
+<style>
+  body {
+    margin: 0;
+    background: #05090f;
+    color: #a3bffa;
+    font: 12px monospace;
+    overflow: hidden;
+  }
+  
+  .controls {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    background: rgba(0,0,0,0.8);
+    padding: 16px;
+    border-radius: 8px;
+    z-index: 100;
+  }
+  
+  .control-group {
+    margin-bottom: 12px;
+  }
+  
+  .control-group label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  
+  .control-group input {
+    width: 100px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  
+  .stats {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    background: rgba(0,0,0,0.8);
+    padding: 16px;
+    border-radius: 8px;
+    z-index: 100;
+    font-size: 11px;
+  }
+</style>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Rotation Speed</label>
+    <input type="range" id="rotation-speed" min="0" max="0.01" step="0.0001" value="0.0008">
+  </div>
+  <div class="control-group">
+    <label>Node Size</label>
+    <input type="range" id="node-size" min="0.1" max="2" step="0.1" value="0.4">
+  </div>
+  <div class="control-group">
+    <label>Zoom</label>
+    <input type="range" id="zoom" min="20" max="200" step="10" value="60">
+  </div>
+</div>
+
+<div class="stats">
+  <div>Nodes: <span id="node-count">0</span></div>
+  <div>FPS: <span id="fps">0</span></div>
+</div>
+
+<canvas id="gl"></canvas>
+
+<script type="module">
+import * as THREE from "https://cdn.skypack.dev/three@0.160.0";
+
+const canvas = document.getElementById("gl");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight);
+}
+
+addEventListener('resize', resize);
+resize();
+
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000);
+cam.position.z = 60;
+
+const nodes: any[] = [];
+const geo = new THREE.SphereGeometry(0.4, 12, 12);
+const mat = new THREE.MeshBasicMaterial();
+const group = new THREE.Group();
+scene.add(group);
+
+// Controls
+const rotationSpeed = document.getElementById('rotation-speed') as HTMLInputElement;
+const nodeSize = document.getElementById('node-size') as HTMLInputElement;
+const zoom = document.getElementById('zoom') as HTMLInputElement;
+
+rotationSpeed.oninput = () => {
+  const speed = parseFloat(rotationSpeed.value);
+  // Update rotation speed in animation loop
+};
+
+nodeSize.oninput = () => {
+  const size = parseFloat(nodeSize.value);
+  group.children.forEach(child => {
+    child.scale.setScalar(size / 0.4);
+  });
+};
+
+zoom.oninput = () => {
+  const z = parseFloat(zoom.value);
+  cam.position.z = z;
+};
+
+// Load data
+async function loadNodes() {
+  try {
+    const res = await fetch("/cool/memgraph/nodes");
+    const data = await res.json();
+    
+    document.getElementById('node-count').textContent = data.length.toString();
+    
+    for (const n of data) {
+      // Project 768D embedding to 3D via naive slice or PCA server-side if you respect yourself
+      const e = n.emb;
+      const x = e[0] * 20, y = e[1] * 20, z = e[2] * 20;
+      
+      const m = new THREE.Mesh(geo, mat.clone());
+      m.position.set(x, y, z);
+      m.userData = n;
+      m.material.color.setHSL((e[3] || 0.5), 0.6, 0.6);
+      
+      group.add(m);
+      nodes.push(m);
+    }
+  } catch (error) {
+    console.error("Failed to load nodes:", error);
+    // Create some demo nodes
+    for (let i = 0; i < 50; i++) {
+      const m = new THREE.Mesh(geo, mat.clone());
+      m.position.set(
+        (Math.random() - 0.5) * 40,
+        (Math.random() - 0.5) * 40,
+        (Math.random() - 0.5) * 40
+      );
+      m.material.color.setHSL(Math.random(), 0.6, 0.6);
+      group.add(m);
+      nodes.push(m);
+    }
+    document.getElementById('node-count').textContent = '50 (demo)';
+  }
+}
+
+loadNodes();
+
+// Animation
+let lastTime = 0;
+function animate(currentTime) {
+  requestAnimationFrame(animate);
+  
+  const deltaTime = currentTime - lastTime;
+  lastTime = currentTime;
+  
+  // Update FPS
+  const fps = Math.round(1000 / deltaTime);
+  document.getElementById('fps').textContent = fps.toString();
+  
+  // Rotate group
+  const speed = parseFloat(rotationSpeed.value);
+  group.rotation.y += speed;
+  
+  // Optional: add some movement
+  nodes.forEach((node, i) => {
+    const time = currentTime * 0.001;
+    node.position.y += Math.sin(time + i * 0.1) * 0.01;
+  });
+  
+  renderer.render(scene, cam);
+}
+
+animate(0);
+
+// Mouse controls
+let isMouseDown = false;
+let mouseX = 0;
+let mouseY = 0;
+
+canvas.addEventListener('mousedown', (e) => {
+  isMouseDown = true;
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!isMouseDown) return;
+  
+  const deltaX = e.clientX - mouseX;
+  const deltaY = e.clientY - mouseY;
+  
+  group.rotation.y += deltaX * 0.01;
+  group.rotation.x += deltaY * 0.01;
+  
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+canvas.addEventListener('mouseup', () => {
+  isMouseDown = false;
+});
+
+canvas.addEventListener('wheel', (e) => {
+  const zoomDelta = e.deltaY * 0.1;
+  cam.position.z = Math.max(20, Math.min(200, cam.position.z + zoomDelta));
+  zoom.value = cam.position.z.toString();
+});
+</script>

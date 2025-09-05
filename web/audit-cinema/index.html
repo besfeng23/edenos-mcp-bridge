@@ -1,0 +1,387 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Audit Cinema</title>
+<style>
+  body {
+    margin: 0;
+    background: #0c0f14;
+    color: #e5e7eb;
+    font: 14px monospace;
+    padding: 20px;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #1f2937;
+  }
+  
+  .title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #fbbf24;
+  }
+  
+  .controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  .refresh-btn {
+    background: #1f2937;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: monospace;
+  }
+  
+  .refresh-btn:hover {
+    background: #374151;
+  }
+  
+  .refresh-btn:active {
+    background: #4b5563;
+  }
+  
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+  }
+  
+  .status-dot.error {
+    background: #ef4444;
+  }
+  
+  .filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #111827;
+    border-radius: 8px;
+    border: 1px solid #1f2937;
+  }
+  
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .filter-group label {
+    font-size: 11px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .filter-group select,
+  .filter-group input {
+    background: #1f2937;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+  }
+  
+  .timeline {
+    background: #111827;
+    border-radius: 8px;
+    border: 1px solid #1f2937;
+    overflow: hidden;
+  }
+  
+  .row {
+    padding: 16px;
+    border-bottom: 1px solid #1f2937;
+    display: grid;
+    grid-template-columns: 120px 150px 120px 1fr;
+    gap: 16px;
+    align-items: center;
+    transition: background-color 0.2s;
+  }
+  
+  .row:hover {
+    background: #1f2937;
+  }
+  
+  .row:last-child {
+    border-bottom: none;
+  }
+  
+  .timestamp {
+    font-family: monospace;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  
+  .type {
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  
+  .type.deploy {
+    color: #10b981;
+  }
+  
+  .type.error {
+    color: #ef4444;
+  }
+  
+  .type.warning {
+    color: #f59e0b;
+  }
+  
+  .type.info {
+    color: #3b82f6;
+  }
+  
+  .actor {
+    font-family: monospace;
+    font-size: 12px;
+    color: #d1d5db;
+    background: #374151;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-align: center;
+  }
+  
+  .meta {
+    font-family: monospace;
+    font-size: 11px;
+    color: #9ca3af;
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6b7280;
+    font-style: italic;
+  }
+  
+  .loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9ca3af;
+  }
+  
+  .spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #374151;
+    border-radius: 50%;
+    border-top-color: #10b981;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<div class="header">
+  <div class="title">🎬 Audit Cinema</div>
+  <div class="controls">
+    <div class="status">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <button class="refresh-btn" onclick="loadAuditLogs()">Refresh</button>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="filter-group">
+    <label>Event Type</label>
+    <select id="type-filter">
+      <option value="">All Types</option>
+      <option value="deploy">Deploy</option>
+      <option value="error">Error</option>
+      <option value="warning">Warning</option>
+      <option value="info">Info</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Actor</label>
+    <input type="text" id="actor-filter" placeholder="Filter by actor...">
+  </div>
+  <div class="filter-group">
+    <label>Time Range</label>
+    <select id="time-filter">
+      <option value="1h">Last Hour</option>
+      <option value="6h">Last 6 Hours</option>
+      <option value="24h" selected>Last 24 Hours</option>
+      <option value="7d">Last 7 Days</option>
+    </select>
+  </div>
+</div>
+
+<div class="timeline" id="timeline">
+  <div class="loading">
+    <div class="spinner"></div>
+    Loading audit logs...
+  </div>
+</div>
+
+<script>
+let auditLogs = [];
+let filteredLogs = [];
+
+// Load audit logs from the API
+async function loadAuditLogs() {
+  const timeline = document.getElementById('timeline');
+  const statusDot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+  
+  try {
+    statusText.textContent = 'Loading...';
+    statusDot.className = 'status-dot';
+    
+    const response = await fetch('/cool/audit/tail');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    auditLogs = await response.json();
+    filteredLogs = [...auditLogs];
+    
+    statusText.textContent = `${auditLogs.length} events loaded`;
+    statusDot.className = 'status-dot';
+    
+    renderTimeline();
+  } catch (error) {
+    console.error('Failed to load audit logs:', error);
+    statusText.textContent = 'Failed to load';
+    statusDot.className = 'status-dot error';
+    
+    // Show demo data
+    auditLogs = generateDemoData();
+    filteredLogs = [...auditLogs];
+    renderTimeline();
+  }
+}
+
+// Generate demo data for testing
+function generateDemoData() {
+  const types = ['deploy_ephemeral', 'deploy_approved', 'chaos_injected', 'env_cloned', 'killswitch_activated'];
+  const actors = ['joven', 'system', 'ci-bot', 'admin'];
+  
+  const demo = [];
+  const now = Date.now();
+  
+  for (let i = 0; i < 20; i++) {
+    demo.push({
+      ts: now - (i * 300000), // 5 min intervals
+      type: types[Math.floor(Math.random() * types.length)],
+      actor: actors[Math.floor(Math.random() * actors.length)],
+      meta: {
+        service: 'edenos-mcp-bridge',
+        region: 'asia-southeast1',
+        timestamp: new Date(now - (i * 300000)).toISOString()
+      }
+    });
+  }
+  
+  return demo.sort((a, b) => b.ts - a.ts);
+}
+
+// Render the timeline
+function renderTimeline() {
+  const timeline = document.getElementById('timeline');
+  
+  if (filteredLogs.length === 0) {
+    timeline.innerHTML = '<div class="empty">No audit events found</div>';
+    return;
+  }
+  
+  timeline.innerHTML = filteredLogs.map(log => {
+    const timestamp = new Date(log.ts).toLocaleTimeString();
+    const typeClass = getTypeClass(log.type);
+    const actor = log.actor || 'system';
+    const meta = JSON.stringify(log.meta || {}, null, 2);
+    
+    return `
+      <div class="row">
+        <div class="timestamp">${timestamp}</div>
+        <div class="type ${typeClass}">${log.type}</div>
+        <div class="actor">${actor}</div>
+        <div class="meta" title="${meta}">${meta}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Get CSS class for event type
+function getTypeClass(type) {
+  if (type.includes('deploy')) return 'deploy';
+  if (type.includes('error') || type.includes('fail')) return 'error';
+  if (type.includes('warn')) return 'warning';
+  return 'info';
+}
+
+// Apply filters
+function applyFilters() {
+  const typeFilter = document.getElementById('type-filter').value;
+  const actorFilter = document.getElementById('actor-filter').value.toLowerCase();
+  const timeFilter = document.getElementById('time-filter').value;
+  
+  filteredLogs = auditLogs.filter(log => {
+    // Type filter
+    if (typeFilter && !log.type.includes(typeFilter)) return false;
+    
+    // Actor filter
+    if (actorFilter && !(log.actor || 'system').toLowerCase().includes(actorFilter)) return false;
+    
+    // Time filter
+    const logTime = new Date(log.ts).getTime();
+    const now = Date.now();
+    const timeRanges = {
+      '1h': 60 * 60 * 1000,
+      '6h': 6 * 60 * 60 * 1000,
+      '24h': 24 * 60 * 60 * 1000,
+      '7d': 7 * 24 * 60 * 60 * 1000
+    };
+    
+    if (timeFilter && (now - logTime) > timeRanges[timeFilter]) return false;
+    
+    return true;
+  });
+  
+  renderTimeline();
+}
+
+// Event listeners
+document.getElementById('type-filter').addEventListener('change', applyFilters);
+document.getElementById('actor-filter').addEventListener('input', applyFilters);
+document.getElementById('time-filter').addEventListener('change', applyFilters);
+
+// Auto-refresh every 30 seconds
+setInterval(loadAuditLogs, 30000);
+
+// Initial load
+loadAuditLogs();
+</script>
