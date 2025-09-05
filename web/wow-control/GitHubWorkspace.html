@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdenOS GitHub Workspace - AI-Powered Code Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #0a0f18 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .github-workspace {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 200, 255, 0.1) 0%, transparent 50%);
+        }
+
+        .workspace-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #00ff88;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ff88;
+        }
+
+        .header-subtitle {
+            font-size: 1rem;
+            color: #88ffaa;
+            opacity: 0.8;
+        }
+
+        .workspace-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.7);
+            border-right: 2px solid #00ff88;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .repo-list {
+            list-style: none;
+        }
+
+        .repo-item {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .repo-item:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateX(5px);
+        }
+
+        .repo-item.active {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: #88ffaa;
+        }
+
+        .repo-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .repo-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .content-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid #00ff88;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: scale(1.05);
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .repo-detail {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .repo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .repo-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .repo-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: #88ffaa;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .issue-list {
+            list-style: none;
+        }
+
+        .issue-item {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .issue-item:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .issue-number {
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .issue-state {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .issue-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .issue-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .search-bar {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #88ffaa;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            color: #00ff88;
+            font-size: 0.9rem;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .notification.success {
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="github-workspace">
+        <div class="workspace-header">
+            <div>
+                <div class="header-title">EDENOS GITHUB WORKSPACE</div>
+                <div class="header-subtitle">AI-Powered Code Management</div>
+            </div>
+            <div class="content-actions">
+                <button class="action-button" onclick="refreshData()">Refresh</button>
+                <button class="action-button" onclick="createIssue()">New Issue</button>
+                <button class="action-button" onclick="createPR()">New PR</button>
+            </div>
+        </div>
+
+        <div class="workspace-content">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="section-title">Repositories</div>
+                    <input type="text" class="search-bar" placeholder="Search repos..." id="repo-search">
+                    <ul class="repo-list" id="repo-list">
+                        <li class="repo-item active">
+                            <div class="repo-name">edenos-mcp-bridge</div>
+                            <div class="repo-meta">TypeScript • 15 stars • 3 forks</div>
+                        </li>
+                        <li class="repo-item">
+                            <div class="repo-name">edenos-control-panel</div>
+                            <div class="repo-meta">React • 8 stars • 1 fork</div>
+                        </li>
+                        <li class="repo-item">
+                            <div class="repo-name">edenos-wow-features</div>
+                            <div class="repo-meta">HTML/CSS • 12 stars • 2 forks</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title">Recent Issues</div>
+                    <ul class="issue-list" id="recent-issues">
+                        <li class="issue-item">
+                            <div class="issue-header">
+                                <span class="issue-number">#123</span>
+                                <span class="issue-state">Open</span>
+                            </div>
+                            <div class="issue-title">Add GitHub MCP integration</div>
+                            <div class="issue-meta">Created 2 hours ago</div>
+                        </li>
+                        <li class="issue-item">
+                            <div class="issue-header">
+                                <span class="issue-number">#122</span>
+                                <span class="issue-state">Closed</span>
+                            </div>
+                            <div class="issue-title">Fix Notion API rate limiting</div>
+                            <div class="issue-meta">Closed 1 day ago</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-header">
+                    <div class="content-title" id="content-title">edenos-mcp-bridge</div>
+                    <div class="content-actions">
+                        <button class="action-button" onclick="viewIssues()">Issues</button>
+                        <button class="action-button" onclick="viewPRs()">Pull Requests</button>
+                        <button class="action-button" onclick="viewActions()">Actions</button>
+                    </div>
+                </div>
+
+                <div class="content-body">
+                    <div class="repo-detail" id="repo-detail">
+                        <div class="repo-header">
+                            <div class="repo-title">edenos-mcp-bridge</div>
+                            <div class="repo-stats">
+                                <div class="stat">⭐ 15</div>
+                                <div class="stat">🍴 3</div>
+                                <div class="stat">🐛 2</div>
+                            </div>
+                        </div>
+
+                        <div class="issue-list" id="issue-list">
+                            <li class="issue-item">
+                                <div class="issue-header">
+                                    <span class="issue-number">#123</span>
+                                    <span class="issue-state">Open</span>
+                                </div>
+                                <div class="issue-title">Add GitHub MCP integration</div>
+                                <div class="issue-meta">Created 2 hours ago by @besfeng23</div>
+                            </li>
+                            <li class="issue-item">
+                                <div class="issue-header">
+                                    <span class="issue-number">#122</span>
+                                    <span class="issue-state">Closed</span>
+                                </div>
+                                <div class="issue-title">Fix Notion API rate limiting</div>
+                                <div class="issue-meta">Closed 1 day ago by @besfeng23</div>
+                            </li>
+                            <li class="issue-item">
+                                <div class="issue-header">
+                                    <span class="issue-number">#121</span>
+                                    <span class="issue-state">Open</span>
+                                </div>
+                                <div class="issue-title">Implement Linear workspace UI</div>
+                                <div class="issue-meta">Created 3 days ago by @besfeng23</div>
+                            </li>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script>
+        let currentRepo = null;
+        let repos = [];
+        let issues = [];
+
+        // Initialize the workspace
+        function initWorkspace() {
+            loadRepos();
+            loadIssues();
+            setupEventListeners();
+            showNotification('GitHub Workspace initialized', 'success');
+        }
+
+        // Load repositories from GitHub
+        async function loadRepos() {
+            try {
+                // Simulate API call
+                const mockRepos = [
+                    { name: 'edenos-mcp-bridge', description: 'AI-powered MCP bridge with multiple integrations', language: 'TypeScript', stars: 15, forks: 3, issues: 2 },
+                    { name: 'edenos-control-panel', description: 'React control panel for MCP management', language: 'React', stars: 8, forks: 1, issues: 0 },
+                    { name: 'edenos-wow-features', description: 'Sci-fi features that make normal people gasp', language: 'HTML/CSS', stars: 12, forks: 2, issues: 1 }
+                ];
+
+                repos = mockRepos;
+                renderRepoList();
+            } catch (error) {
+                showNotification('Failed to load repositories', 'error');
+            }
+        }
+
+        // Load issues from GitHub
+        async function loadIssues() {
+            try {
+                // Simulate API call
+                const mockIssues = [
+                    { number: 123, title: 'Add GitHub MCP integration', state: 'open', created: '2 hours ago', author: '@besfeng23' },
+                    { number: 122, title: 'Fix Notion API rate limiting', state: 'closed', created: '1 day ago', author: '@besfeng23' },
+                    { number: 121, title: 'Implement Linear workspace UI', state: 'open', created: '3 days ago', author: '@besfeng23' }
+                ];
+
+                issues = mockIssues;
+                renderIssueList();
+            } catch (error) {
+                showNotification('Failed to load issues', 'error');
+            }
+        }
+
+        // Render repository list
+        function renderRepoList() {
+            const repoList = document.getElementById('repo-list');
+            repoList.innerHTML = '';
+
+            repos.forEach(repo => {
+                const li = document.createElement('li');
+                li.className = 'repo-item';
+                li.innerHTML = `
+                    <div class="repo-name">${repo.name}</div>
+                    <div class="repo-meta">${repo.language} • ${repo.stars} stars • ${repo.forks} forks</div>
+                `;
+                li.onclick = () => selectRepo(repo);
+                repoList.appendChild(li);
+            });
+        }
+
+        // Render issue list
+        function renderIssueList() {
+            const issueList = document.getElementById('issue-list');
+            issueList.innerHTML = '';
+
+            issues.forEach(issue => {
+                const li = document.createElement('li');
+                li.className = 'issue-item';
+                li.innerHTML = `
+                    <div class="issue-header">
+                        <span class="issue-number">#${issue.number}</span>
+                        <span class="issue-state">${issue.state}</span>
+                    </div>
+                    <div class="issue-title">${issue.title}</div>
+                    <div class="issue-meta">Created ${issue.created} by ${issue.author}</div>
+                `;
+                li.onclick = () => selectIssue(issue);
+                issueList.appendChild(li);
+            });
+        }
+
+        // Select a repository
+        function selectRepo(repo) {
+            currentRepo = repo;
+            
+            // Update active state
+            document.querySelectorAll('.repo-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.repo-item').classList.add('active');
+
+            // Update content
+            document.getElementById('content-title').textContent = repo.name;
+            loadRepoDetail(repo);
+        }
+
+        // Load repository detail
+        async function loadRepoDetail(repo) {
+            try {
+                // Simulate API call
+                const mockDetail = {
+                    name: repo.name,
+                    description: repo.description,
+                    language: repo.language,
+                    stars: repo.stars,
+                    forks: repo.forks,
+                    issues: repo.issues
+                };
+
+                document.getElementById('repo-detail').innerHTML = `
+                    <div class="repo-header">
+                        <div class="repo-title">${mockDetail.name}</div>
+                        <div class="repo-stats">
+                            <div class="stat">⭐ ${mockDetail.stars}</div>
+                            <div class="stat">🍴 ${mockDetail.forks}</div>
+                            <div class="stat">🐛 ${mockDetail.issues}</div>
+                        </div>
+                    </div>
+                    <div class="issue-list" id="issue-list">
+                        ${issues.map(issue => `
+                            <li class="issue-item">
+                                <div class="issue-header">
+                                    <span class="issue-number">#${issue.number}</span>
+                                    <span class="issue-state">${issue.state}</span>
+                                </div>
+                                <div class="issue-title">${issue.title}</div>
+                                <div class="issue-meta">Created ${issue.created} by ${issue.author}</div>
+                            </li>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                showNotification('Failed to load repository detail', 'error');
+            }
+        }
+
+        // Select an issue
+        function selectIssue(issue) {
+            showNotification(`Selected issue #${issue.number}: ${issue.title}`, 'success');
+        }
+
+        // Refresh data
+        function refreshData() {
+            showNotification('Refreshing data...', 'success');
+            loadRepos();
+            loadIssues();
+        }
+
+        // Create new issue
+        function createIssue() {
+            const title = prompt('Enter issue title:');
+            if (title) {
+                const newIssue = {
+                    number: Math.floor(Math.random() * 1000) + 100,
+                    title: title,
+                    state: 'open',
+                    created: 'Just now',
+                    author: '@besfeng23'
+                };
+                issues.unshift(newIssue);
+                renderIssueList();
+                showNotification('Issue created successfully', 'success');
+            }
+        }
+
+        // Create new pull request
+        function createPR() {
+            const title = prompt('Enter PR title:');
+            if (title) {
+                showNotification('Pull request created successfully', 'success');
+            }
+        }
+
+        // View issues
+        function viewIssues() {
+            showNotification('Viewing issues...', 'success');
+        }
+
+        // View pull requests
+        function viewPRs() {
+            showNotification('Viewing pull requests...', 'success');
+        }
+
+        // View actions
+        function viewActions() {
+            showNotification('Viewing GitHub Actions...', 'success');
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Repository search
+            document.getElementById('repo-search').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const repoItems = document.querySelectorAll('.repo-item');
+                
+                repoItems.forEach(item => {
+                    const name = item.querySelector('.repo-name').textContent.toLowerCase();
+                    if (name.includes(query)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initWorkspace);
+    </script>
+</body>
+</html>

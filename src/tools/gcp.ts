@@ -1,255 +1,426 @@
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
-// GCP Cloud Run tools
-const RunStatusSchema = z.object({
-  service: z.string(),
-  region: z.string().optional().default('asia-southeast1'),
+// GCP MCP Server Integration
+// Provides tools for interacting with Google Cloud Platform services
+
+const GCPConfigSchema = z.object({
+  projectId: z.string().min(1, 'GCP project ID is required'),
+  serviceAccountKey: z.string().optional(),
+  region: z.string().default('us-central1'),
+  zone: z.string().default('us-central1-a')
 });
 
-const RunRestartSchema = z.object({
-  service: z.string(),
-  region: z.string().optional().default('asia-southeast1'),
-  dryRun: z.boolean().optional().default(false),
-});
+export class GCPMCPServer {
+  private config: z.infer<typeof GCPConfigSchema>;
+  private accessToken: string | null = null;
 
-const RunRollbackSchema = z.object({
-  service: z.string(),
-  region: z.string().optional().default('asia-southeast1'),
-  revision: z.string().optional(),
-  dryRun: z.boolean().optional().default(false),
-});
+  constructor(config: z.infer<typeof GCPConfigSchema>) {
+    this.config = GCPConfigSchema.parse(config);
+  }
 
-// GCP Pub/Sub tools
-const PubSubPublishSchema = z.object({
-  topic: z.string(),
-  payload: z.record(z.any()),
-  attributes: z.record(z.string()).optional(),
-  dryRun: z.boolean().optional().default(false),
-});
+  // Get access token
+  private async getAccessToken(): Promise<string> {
+    if (this.accessToken) return this.accessToken;
 
-// GCP Scheduler tools
-const SchedulerTriggerSchema = z.object({
-  job: z.string(),
-  region: z.string().optional().default('asia-southeast1'),
-  dryRun: z.boolean().optional().default(false),
-});
+    try {
+      const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+          assertion: this.config.serviceAccountKey || ''
+        })
+      });
 
-// GCP Cloud Tasks tools
-const TasksCreateSchema = z.object({
-  queue: z.string(),
-  payload: z.record(z.any()),
-  delay: z.number().optional().default(0),
-  dryRun: z.boolean().optional().default(false),
-});
+      if (!response.ok) {
+        throw new Error(`GCP Auth error: ${response.status} ${response.statusText}`);
+      }
 
-export const gcpTools: Tool[] = [
-  {
-    name: 'gcp.run.status',
-    description: 'Get Cloud Run service status and revision info',
-    inputSchema: RunStatusSchema,
-  },
-  {
-    name: 'gcp.run.restart',
-    description: 'Restart Cloud Run service (creates new revision)',
-    inputSchema: RunRestartSchema,
-  },
-  {
-    name: 'gcp.run.rollback',
-    description: 'Rollback Cloud Run service to previous revision',
-    inputSchema: RunRollbackSchema,
-  },
-  {
-    name: 'gcp.pubsub.publish',
-    description: 'Publish message to Pub/Sub topic',
-    inputSchema: PubSubPublishSchema,
-  },
-  {
-    name: 'gcp.scheduler.trigger',
-    description: 'Trigger Cloud Scheduler job immediately',
-    inputSchema: SchedulerTriggerSchema,
-  },
-  {
-    name: 'gcp.tasks.create',
-    description: 'Create Cloud Task in queue',
-    inputSchema: TasksCreateSchema,
-  },
-];
+      const data = await response.json();
+      this.accessToken = data.access_token;
+      return this.accessToken;
+    } catch (error) {
+      throw new Error(`Failed to get access token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 
-// Implementation functions (to be called from server.ts)
-export async function executeRunStatus(args: z.infer<typeof RunStatusSchema>) {
-  const { service, region } = args;
-  
-  // Use gcloud CLI for now (can be replaced with @google-cloud/run SDK)
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
-  
-  try {
-    const { stdout } = await execAsync(
-      `gcloud run services describe ${service} --region=${region} --format=json`
-    );
-    
-    const serviceInfo = JSON.parse(stdout);
-    return {
-      name: serviceInfo.metadata.name,
-      region: serviceInfo.metadata.namespace,
-      status: serviceInfo.status.conditions?.[0]?.status || 'Unknown',
-      latestRevision: serviceInfo.status.latestReadyRevisionName,
-      url: serviceInfo.status.url,
-      traffic: serviceInfo.status.traffic,
-    };
-  } catch (error) {
-    throw new Error(`Failed to get service status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  // List Cloud Run services
+  async listCloudRunServices() {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(`https://run.googleapis.com/v1/projects/${this.config.projectId}/locations/${this.config.region}/services`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Cloud Run API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.services || [];
+    } catch (error) {
+      throw new Error(`Failed to list Cloud Run services: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Deploy Cloud Run service
+  async deployCloudRunService(serviceName: string, imageUrl: string, port: number = 8080) {
+    try {
+      const token = await this.getAccessToken();
+      const serviceData = {
+        apiVersion: 'serving.knative.dev/v1',
+        kind: 'Service',
+        metadata: {
+          name: serviceName,
+          namespace: this.config.projectId
+        },
+        spec: {
+          template: {
+            spec: {
+              containers: [{
+                image: imageUrl,
+                ports: [{ containerPort: port }],
+                resources: {
+                  limits: {
+                    cpu: '1000m',
+                    memory: '512Mi'
+                  }
+                }
+              }]
+            }
+          }
+        }
+      };
+
+      const response = await fetch(`https://run.googleapis.com/v1/projects/${this.config.projectId}/locations/${this.config.region}/services`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(serviceData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Cloud Run API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to deploy Cloud Run service: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // List Cloud Storage buckets
+  async listStorageBuckets() {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(`https://storage.googleapis.com/storage/v1/b?project=${this.config.projectId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Cloud Storage API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.items || [];
+    } catch (error) {
+      throw new Error(`Failed to list storage buckets: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Create Cloud Storage bucket
+  async createStorageBucket(bucketName: string, location: string = 'US') {
+    try {
+      const token = await this.getAccessToken();
+      const bucketData = {
+        name: bucketName,
+        location: location,
+        storageClass: 'STANDARD'
+      };
+
+      const response = await fetch(`https://storage.googleapis.com/storage/v1/b?project=${this.config.projectId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bucketData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Cloud Storage API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to create storage bucket: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // List AI Platform models
+  async listAIPlatformModels() {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(`https://ml.googleapis.com/v1/projects/${this.config.projectId}/models`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI Platform API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.models || [];
+    } catch (error) {
+      throw new Error(`Failed to list AI Platform models: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Create AI Platform model
+  async createAIPlatformModel(modelName: string, description?: string) {
+    try {
+      const token = await this.getAccessToken();
+      const modelData = {
+        name: modelName,
+        description: description || `Model: ${modelName}`,
+        regions: [this.config.region]
+      };
+
+      const response = await fetch(`https://ml.googleapis.com/v1/projects/${this.config.projectId}/models`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(modelData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI Platform API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to create AI Platform model: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // List BigQuery datasets
+  async listBigQueryDatasets() {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(`https://bigquery.googleapis.com/bigquery/v2/projects/${this.config.projectId}/datasets`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`BigQuery API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.datasets || [];
+    } catch (error) {
+      throw new Error(`Failed to list BigQuery datasets: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Create BigQuery dataset
+  async createBigQueryDataset(datasetId: string, description?: string) {
+    try {
+      const token = await this.getAccessToken();
+      const datasetData = {
+        datasetReference: {
+          datasetId: datasetId,
+          projectId: this.config.projectId
+        },
+        description: description || `Dataset: ${datasetId}`,
+        location: this.config.region
+      };
+
+      const response = await fetch(`https://bigquery.googleapis.com/bigquery/v2/projects/${this.config.projectId}/datasets`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(datasetData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`BigQuery API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to create BigQuery dataset: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Get project info
+  async getProjectInfo() {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(`https://cloudresourcemanager.googleapis.com/v1/projects/${this.config.projectId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Cloud Resource Manager API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to get project info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
 
-export async function executeRunRestart(args: z.infer<typeof RunRestartSchema>) {
-  const { service, region, dryRun } = args;
-  
-  if (dryRun) {
-    return { message: `DRY RUN: Would restart ${service} in ${region}` };
+// MCP Tools for GCP
+export const gcpTools = {
+  'gcp.list-cloud-run-services': {
+    description: 'List Cloud Run services',
+    parameters: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  'gcp.deploy-cloud-run-service': {
+    description: 'Deploy a Cloud Run service',
+    parameters: {
+      type: 'object',
+      properties: {
+        serviceName: { type: 'string', description: 'Service name' },
+        imageUrl: { type: 'string', description: 'Container image URL' },
+        port: { type: 'number', description: 'Container port' }
+      },
+      required: ['serviceName', 'imageUrl']
+    }
+  },
+  'gcp.list-storage-buckets': {
+    description: 'List Cloud Storage buckets',
+    parameters: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  'gcp.create-storage-bucket': {
+    description: 'Create a Cloud Storage bucket',
+    parameters: {
+      type: 'object',
+      properties: {
+        bucketName: { type: 'string', description: 'Bucket name' },
+        location: { type: 'string', description: 'Bucket location' }
+      },
+      required: ['bucketName']
+    }
+  },
+  'gcp.list-ai-platform-models': {
+    description: 'List AI Platform models',
+    parameters: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  'gcp.create-ai-platform-model': {
+    description: 'Create an AI Platform model',
+    parameters: {
+      type: 'object',
+      properties: {
+        modelName: { type: 'string', description: 'Model name' },
+        description: { type: 'string', description: 'Model description' }
+      },
+      required: ['modelName']
+    }
+  },
+  'gcp.list-bigquery-datasets': {
+    description: 'List BigQuery datasets',
+    parameters: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  'gcp.create-bigquery-dataset': {
+    description: 'Create a BigQuery dataset',
+    parameters: {
+      type: 'object',
+      properties: {
+        datasetId: { type: 'string', description: 'Dataset ID' },
+        description: { type: 'string', description: 'Dataset description' }
+      },
+      required: ['datasetId']
+    }
+  },
+  'gcp.get-project-info': {
+    description: 'Get GCP project information',
+    parameters: {
+      type: 'object',
+      properties: {}
+    }
   }
+};
+
+// Tool execution handler
+export async function executeGCPTool(tool: string, args: any, config: any) {
+  const gcp = new GCPMCPServer(config);
   
-  // Use gcloud CLI to update service (triggers new revision)
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
-  
-  try {
-    const { stdout } = await execAsync(
-      `gcloud run services update ${service} --region=${region} --set-env-vars RESTART_TRIGGER=${Date.now()} --format=json`
-    );
+  switch (tool) {
+    case 'gcp.list-cloud-run-services':
+      return await gcp.listCloudRunServices();
     
-    const result = JSON.parse(stdout);
-    return {
-      message: `Service ${service} restarted successfully`,
-      newRevision: result.status.latestReadyRevisionName,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    throw new Error(`Failed to restart service: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    case 'gcp.deploy-cloud-run-service':
+      return await gcp.deployCloudRunService(args.serviceName, args.imageUrl, args.port);
+    
+    case 'gcp.list-storage-buckets':
+      return await gcp.listStorageBuckets();
+    
+    case 'gcp.create-storage-bucket':
+      return await gcp.createStorageBucket(args.bucketName, args.location);
+    
+    case 'gcp.list-ai-platform-models':
+      return await gcp.listAIPlatformModels();
+    
+    case 'gcp.create-ai-platform-model':
+      return await gcp.createAIPlatformModel(args.modelName, args.description);
+    
+    case 'gcp.list-bigquery-datasets':
+      return await gcp.listBigQueryDatasets();
+    
+    case 'gcp.create-bigquery-dataset':
+      return await gcp.createBigQueryDataset(args.datasetId, args.description);
+    
+    case 'gcp.get-project-info':
+      return await gcp.getProjectInfo();
+    
+    default:
+      throw new Error(`Unknown GCP tool: ${tool}`);
   }
 }
-
-export async function executeRunRollback(args: z.infer<typeof RunRollbackSchema>) {
-  const { service, region, revision, dryRun } = args;
-  
-  if (dryRun) {
-    return { message: `DRY RUN: Would rollback ${service} to ${revision || 'previous revision'}` };
-  }
-  
-  // Use gcloud CLI to rollback traffic
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
-  
-  try {
-    const targetRevision = revision || 'REVISION-1';
-    const { stdout } = await execAsync(
-      `gcloud run services update-traffic ${service} --region=${region} --to-revisions=${targetRevision}=100 --format=json`
-    );
-    
-    const result = JSON.parse(stdout);
-    return {
-      message: `Service ${service} rolled back successfully`,
-      activeRevision: targetRevision,
-      traffic: result.status.traffic,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    throw new Error(`Failed to rollback service: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-export async function executePubSubPublish(args: z.infer<typeof PubSubPublishSchema>) {
-  const { topic, payload, attributes, dryRun } = args;
-  
-  if (dryRun) {
-    return { message: `DRY RUN: Would publish to ${topic}`, payload, attributes };
-  }
-  
-  // Use gcloud CLI for now (can be replaced with @google-cloud/pubsub SDK)
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
-  
-  try {
-    const message = JSON.stringify(payload);
-    const attrFlags = attributes ? Object.entries(attributes).map(([k, v]) => `--attribute=${k}=${v}`).join(' ') : '';
-    
-    const { stdout } = await execAsync(
-      `gcloud pubsub topics publish ${topic} --message='${message}' ${attrFlags} --format=json`
-    );
-    
-    const result = JSON.parse(stdout);
-    return {
-      message: `Message published to ${topic} successfully`,
-      messageId: result.messageIds?.[0],
-      topic,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    throw new Error(`Failed to publish message: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-export async function executeSchedulerTrigger(args: z.infer<typeof SchedulerTriggerSchema>) {
-  const { job, region, dryRun } = args;
-  
-  if (dryRun) {
-    return { message: `DRY RUN: Would trigger scheduler job ${job} in ${region}` };
-  }
-  
-  // Use gcloud CLI to run scheduler job
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
-  
-  try {
-    const { stdout } = await execAsync(
-      `gcloud scheduler jobs run ${job} --location=${region} --format=json`
-    );
-    
-    const result = JSON.parse(stdout);
-    return {
-      message: `Scheduler job ${job} triggered successfully`,
-      jobName: result.name,
-      state: result.state,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    throw new Error(`Failed to trigger scheduler job: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-export async function executeTasksCreate(args: z.infer<typeof TasksCreateSchema>) {
-  const { queue, payload, delay, dryRun } = args;
-  
-  if (dryRun) {
-    return { message: `DRY RUN: Would create task in ${queue}`, payload, delay };
-  }
-  
-  // Use gcloud CLI to create task
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
-  
-  try {
-    const message = JSON.stringify(payload);
-    const { stdout } = await execAsync(
-      `gcloud tasks create-http-task --queue=${queue} --body-content='${message}' --schedule-time=${Date.now() + (delay * 1000)} --format=json`
-    );
-    
-    const result = JSON.parse(stdout);
-    return {
-      message: `Task created in ${queue} successfully`,
-      taskName: result.name,
-      scheduleTime: result.scheduleTime,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    throw new Error(`Failed to create task: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-

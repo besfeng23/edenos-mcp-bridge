@@ -57,7 +57,7 @@ app.get('/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    features: ['notion', 'linear', 'fun-features']
+    features: ['notion', 'linear', 'github', 'firebase', 'gcp', 'fun-features']
   });
 });
 
@@ -68,7 +68,7 @@ app.get('/metrics', (req, res) => {
     memory: process.memoryUsage(),
     timestamp: new Date().toISOString(),
     tools: getAllTools().length,
-    services: ['notion', 'linear']
+    services: ['notion', 'linear', 'github', 'firebase', 'gcp']
   });
 });
 
@@ -91,6 +91,9 @@ app.get('/', (req, res) => {
     features: {
       notion: 'Notion workspace integration',
       linear: 'Linear project management',
+      github: 'GitHub code management',
+      firebase: 'Firebase cloud services',
+      gcp: 'Google Cloud Platform infrastructure',
       fun: 'Cool features for normal people',
       controlPanel: 'React control panel',
       wowControl: 'Sci-fi features that make people gasp'
@@ -124,6 +127,17 @@ app.post('/tools', async (req, res) => {
       },
       linear: {
         apiKey: process.env.LINEAR_API_KEY || 'demo-key'
+      },
+      github: {
+        token: process.env.GITHUB_TOKEN || 'demo-key'
+      },
+      firebase: {
+        projectId: process.env.FIREBASE_PROJECT_ID || 'demo-project',
+        serviceAccountKey: process.env.FIREBASE_SERVICE_ACCOUNT_KEY || 'demo-key'
+      },
+      gcp: {
+        projectId: process.env.GCP_PROJECT_ID || 'demo-project',
+        serviceAccountKey: process.env.GCP_SERVICE_ACCOUNT_KEY || 'demo-key'
       }
     });
 
@@ -317,6 +331,96 @@ const tools: Tool[] = [
       },
       required: ['query']
     }
+  },
+  // GitHub tools
+  {
+    name: 'github.get-repository',
+    description: 'Get a GitHub repository by owner and name',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        owner: { type: 'string', description: 'Repository owner' },
+        repo: { type: 'string', description: 'Repository name' }
+      },
+      required: ['owner', 'repo']
+    }
+  },
+  {
+    name: 'github.create-issue',
+    description: 'Create a new GitHub issue',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        owner: { type: 'string', description: 'Repository owner' },
+        repo: { type: 'string', description: 'Repository name' },
+        title: { type: 'string', description: 'Issue title' },
+        body: { type: 'string', description: 'Issue body' }
+      },
+      required: ['owner', 'repo', 'title']
+    }
+  },
+  {
+    name: 'github.create-pull-request',
+    description: 'Create a new GitHub pull request',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        owner: { type: 'string', description: 'Repository owner' },
+        repo: { type: 'string', description: 'Repository name' },
+        title: { type: 'string', description: 'PR title' },
+        head: { type: 'string', description: 'Head branch' },
+        base: { type: 'string', description: 'Base branch' }
+      },
+      required: ['owner', 'repo', 'title', 'head', 'base']
+    }
+  },
+  // Firebase tools
+  {
+    name: 'firebase.get-document',
+    description: 'Get a Firestore document',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        collection: { type: 'string', description: 'Collection name' },
+        documentId: { type: 'string', description: 'Document ID' }
+      },
+      required: ['collection', 'documentId']
+    }
+  },
+  {
+    name: 'firebase.create-document',
+    description: 'Create a Firestore document',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        collection: { type: 'string', description: 'Collection name' },
+        documentId: { type: 'string', description: 'Document ID' },
+        data: { type: 'object', description: 'Document data' }
+      },
+      required: ['collection', 'documentId', 'data']
+    }
+  },
+  // GCP tools
+  {
+    name: 'gcp.list-cloud-run-services',
+    description: 'List Cloud Run services',
+    inputSchema: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  {
+    name: 'gcp.deploy-cloud-run-service',
+    description: 'Deploy a Cloud Run service',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        serviceName: { type: 'string', description: 'Service name' },
+        imageUrl: { type: 'string', description: 'Container image URL' },
+        port: { type: 'number', description: 'Container port' }
+      },
+      required: ['serviceName', 'imageUrl']
+    }
   }
 ];
 
@@ -336,6 +440,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       },
       linear: {
         apiKey: process.env.LINEAR_API_KEY || 'demo-key'
+      },
+      github: {
+        token: process.env.GITHUB_TOKEN || 'demo-key'
+      },
+      firebase: {
+        projectId: process.env.FIREBASE_PROJECT_ID || 'demo-project',
+        serviceAccountKey: process.env.FIREBASE_SERVICE_ACCOUNT_KEY || 'demo-key'
+      },
+      gcp: {
+        projectId: process.env.GCP_PROJECT_ID || 'demo-project',
+        serviceAccountKey: process.env.GCP_SERVICE_ACCOUNT_KEY || 'demo-key'
       }
     });
 
