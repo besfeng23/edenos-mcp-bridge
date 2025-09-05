@@ -1,15 +1,18 @@
-import { DiscussServiceClient } from "@google-cloud/aiplatform";
-import { Router } from "express";
-const client = new DiscussServiceClient();
-export const doppelRouter = Router();
-// Naive: pull last 200 admin commands from your deploy logs or DB
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.doppelRouter = void 0;
+exports.logCmd = logCmd;
+const aiplatform_1 = require("@google-cloud/aiplatform");
+const express_1 = require("express");
+const client = new aiplatform_1.DiscussServiceClient();
+exports.doppelRouter = (0, express_1.Router)();
 const history = [];
-export function logCmd(c) {
+function logCmd(c) {
     history.push(`[${new Date().toISOString()}] ${c}`);
     if (history.length > 200)
         history.shift();
 }
-doppelRouter.post("/plan", async (req, res) => {
+exports.doppelRouter.post("/plan", async (req, res) => {
     try {
         const prompt = [
             "You are EdenOS Operator. Given recent commands, propose the next 5 commands for this week.",

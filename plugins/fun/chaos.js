@@ -1,5 +1,9 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.chaos = void 0;
+exports.chaosMiddleware = chaosMiddleware;
 let failureRate = parseInt(process.env.CHAOS_FAIL_PERCENT || "0", 10);
-export const chaos = {
+exports.chaos = {
     shouldFail() {
         return Math.random() * 100 < failureRate;
     },
@@ -10,9 +14,8 @@ export const chaos = {
         return failureRate;
     }
 };
-// Example middleware you can add globally:
-export function chaosMiddleware(req, res, next) {
-    if (chaos.shouldFail()) {
+function chaosMiddleware(req, res, next) {
+    if (exports.chaos.shouldFail()) {
         return res.status(503).json({ error: "Chaos induced failure" });
     }
     next();

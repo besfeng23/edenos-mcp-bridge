@@ -4,3 +4,4 @@ export declare const chaos: {
     getFailureRate(): number;
 };
 export declare function chaosMiddleware(req: any, res: any, next: any): any;
+//# sourceMappingURL=chaos.d.ts.map

@@ -1,1 +1,2 @@
-export declare const killRouter: any;
+export declare const killRouter: import("express-serve-static-core").Router;
+//# sourceMappingURL=index.d.ts.map
