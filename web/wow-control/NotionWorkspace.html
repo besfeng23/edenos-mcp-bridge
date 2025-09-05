@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdenOS Notion Workspace - AI-Powered Knowledge Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #0a0f18 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .notion-workspace {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 200, 255, 0.1) 0%, transparent 50%);
+        }
+
+        .workspace-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #00ff88;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ff88;
+        }
+
+        .header-subtitle {
+            font-size: 1rem;
+            color: #88ffaa;
+            opacity: 0.8;
+        }
+
+        .workspace-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.7);
+            border-right: 2px solid #00ff88;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .page-list {
+            list-style: none;
+        }
+
+        .page-item {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-item:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateX(5px);
+        }
+
+        .page-item.active {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: #88ffaa;
+        }
+
+        .page-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .page-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .content-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid #00ff88;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: scale(1.05);
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .page-content {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .block {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 255, 136, 0.05);
+            border-left: 3px solid #00ff88;
+            border-radius: 5px;
+        }
+
+        .block-heading {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #00ff88;
+        }
+
+        .block-text {
+            line-height: 1.6;
+            color: #e5e7eb;
+        }
+
+        .block-code {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #374151;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            color: #00ff88;
+            overflow-x: auto;
+        }
+
+        .search-bar {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #88ffaa;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .database-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .database-card {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .database-card:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .database-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #00ff88;
+        }
+
+        .database-description {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.8;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #374151;
+            border-radius: 50%;
+            border-top-color: #00ff88;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            color: #00ff88;
+            font-size: 0.9rem;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .notification.success {
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6b7280;
+            padding: 40px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="notion-workspace">
+        <div class="workspace-header">
+            <div>
+                <div class="header-title">EDENOS NOTION WORKSPACE</div>
+                <div class="header-subtitle">AI-Powered Knowledge Management</div>
+            </div>
+            <div class="content-actions">
+                <button class="action-button" onclick="refreshData()">Refresh</button>
+                <button class="action-button" onclick="createPage()">New Page</button>
+                <button class="action-button" onclick="searchNotion()">Search</button>
+            </div>
+        </div>
+
+        <div class="workspace-content">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="section-title">Pages</div>
+                    <input type="text" class="search-bar" placeholder="Search pages..." id="page-search">
+                    <ul class="page-list" id="page-list">
+                        <li class="page-item active">
+                            <div class="page-title">Welcome to EdenOS</div>
+                            <div class="page-meta">Created 2 hours ago</div>
+                        </li>
+                        <li class="page-item">
+                            <div class="page-title">Project Documentation</div>
+                            <div class="page-meta">Updated 1 day ago</div>
+                        </li>
+                        <li class="page-item">
+                            <div class="page-title">Meeting Notes</div>
+                            <div class="page-meta">Created 3 days ago</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title">Databases</div>
+                    <div class="database-grid" id="database-grid">
+                        <div class="database-card">
+                            <div class="database-title">Tasks</div>
+                            <div class="database-description">Project tasks and todos</div>
+                        </div>
+                        <div class="database-card">
+                            <div class="database-title">Ideas</div>
+                            <div class="database-description">Brainstorming and concepts</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-header">
+                    <div class="content-title" id="content-title">Welcome to EdenOS</div>
+                    <div class="content-actions">
+                        <button class="action-button" onclick="editPage()">Edit</button>
+                        <button class="action-button" onclick="sharePage()">Share</button>
+                    </div>
+                </div>
+
+                <div class="content-body">
+                    <div class="page-content" id="page-content">
+                        <div class="block">
+                            <div class="block-heading">Welcome to EdenOS Notion Workspace</div>
+                            <div class="block-text">
+                                This is your AI-powered knowledge management system. Here you can create, edit, and organize your Notion pages and databases with the power of EdenOS.
+                            </div>
+                        </div>
+
+                        <div class="block">
+                            <div class="block-heading">Features</div>
+                            <div class="block-text">
+                                • Real-time page synchronization<br>
+                                • AI-powered content generation<br>
+                                • Advanced search capabilities<br>
+                                • Database management<br>
+                                • Collaborative editing
+                            </div>
+                        </div>
+
+                        <div class="block">
+                            <div class="block-heading">Getting Started</div>
+                            <div class="block-text">
+                                1. Configure your Notion API key in the settings<br>
+                                2. Browse your existing pages in the sidebar<br>
+                                3. Create new pages and databases<br>
+                                4. Use the search function to find content quickly
+                            </div>
+                        </div>
+
+                        <div class="block">
+                            <div class="block-heading">Code Example</div>
+                            <div class="block-code">
+// Connect to Notion API
+const notion = new NotionMCPServer({
+  apiKey: 'your-api-key',
+  version: '2022-06-28'
+});
+
+// Get a page
+const page = await notion.getPage('page-id');
+console.log(page.title);
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script>
+        let currentPage = null;
+        let pages = [];
+        let databases = [];
+
+        // Initialize the workspace
+        function initWorkspace() {
+            loadPages();
+            loadDatabases();
+            setupEventListeners();
+            showNotification('Notion Workspace initialized', 'success');
+        }
+
+        // Load pages from Notion
+        async function loadPages() {
+            try {
+                // Simulate API call
+                const mockPages = [
+                    { id: '1', title: 'Welcome to EdenOS', created: '2 hours ago', url: '#' },
+                    { id: '2', title: 'Project Documentation', created: '1 day ago', url: '#' },
+                    { id: '3', title: 'Meeting Notes', created: '3 days ago', url: '#' },
+                    { id: '4', title: 'API Documentation', created: '1 week ago', url: '#' },
+                    { id: '5', title: 'User Guide', created: '2 weeks ago', url: '#' }
+                ];
+
+                pages = mockPages;
+                renderPageList();
+            } catch (error) {
+                showNotification('Failed to load pages', 'error');
+            }
+        }
+
+        // Load databases from Notion
+        async function loadDatabases() {
+            try {
+                // Simulate API call
+                const mockDatabases = [
+                    { id: '1', title: 'Tasks', description: 'Project tasks and todos', count: 15 },
+                    { id: '2', title: 'Ideas', description: 'Brainstorming and concepts', count: 8 },
+                    { id: '3', title: 'Team Members', description: 'Team directory', count: 12 },
+                    { id: '4', title: 'Projects', description: 'Active projects', count: 5 }
+                ];
+
+                databases = mockDatabases;
+                renderDatabaseGrid();
+            } catch (error) {
+                showNotification('Failed to load databases', 'error');
+            }
+        }
+
+        // Render page list
+        function renderPageList() {
+            const pageList = document.getElementById('page-list');
+            pageList.innerHTML = '';
+
+            pages.forEach(page => {
+                const li = document.createElement('li');
+                li.className = 'page-item';
+                li.innerHTML = `
+                    <div class="page-title">${page.title}</div>
+                    <div class="page-meta">Created ${page.created}</div>
+                `;
+                li.onclick = () => selectPage(page);
+                pageList.appendChild(li);
+            });
+        }
+
+        // Render database grid
+        function renderDatabaseGrid() {
+            const databaseGrid = document.getElementById('database-grid');
+            databaseGrid.innerHTML = '';
+
+            databases.forEach(db => {
+                const card = document.createElement('div');
+                card.className = 'database-card';
+                card.innerHTML = `
+                    <div class="database-title">${db.title}</div>
+                    <div class="database-description">${db.description}</div>
+                `;
+                card.onclick = () => openDatabase(db);
+                databaseGrid.appendChild(card);
+            });
+        }
+
+        // Select a page
+        function selectPage(page) {
+            currentPage = page;
+            
+            // Update active state
+            document.querySelectorAll('.page-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.page-item').classList.add('active');
+
+            // Update content
+            document.getElementById('content-title').textContent = page.title;
+            loadPageContent(page);
+        }
+
+        // Load page content
+        async function loadPageContent(page) {
+            try {
+                // Simulate API call
+                const mockContent = generateMockContent(page.title);
+                document.getElementById('page-content').innerHTML = mockContent;
+            } catch (error) {
+                showNotification('Failed to load page content', 'error');
+            }
+        }
+
+        // Generate mock content based on page title
+        function generateMockContent(title) {
+            const contentTemplates = {
+                'Welcome to EdenOS': `
+                    <div class="block">
+                        <div class="block-heading">Welcome to EdenOS Notion Workspace</div>
+                        <div class="block-text">
+                            This is your AI-powered knowledge management system. Here you can create, edit, and organize your Notion pages and databases with the power of EdenOS.
+                        </div>
+                    </div>
+                    <div class="block">
+                        <div class="block-heading">Features</div>
+                        <div class="block-text">
+                            • Real-time page synchronization<br>
+                            • AI-powered content generation<br>
+                            • Advanced search capabilities<br>
+                            • Database management<br>
+                            • Collaborative editing
+                        </div>
+                    </div>
+                `,
+                'Project Documentation': `
+                    <div class="block">
+                        <div class="block-heading">Project Overview</div>
+                        <div class="block-text">
+                            This document contains comprehensive information about our current project, including architecture, API specifications, and deployment procedures.
+                        </div>
+                    </div>
+                    <div class="block">
+                        <div class="block-heading">Architecture</div>
+                        <div class="block-text">
+                            The system is built using a microservices architecture with the following components:<br>
+                            • MCP Bridge Server<br>
+                            • React Control Panel<br>
+                            • Firebase Hosting<br>
+                            • Cloud Run Services
+                        </div>
+                    </div>
+                `,
+                'Meeting Notes': `
+                    <div class="block">
+                        <div class="block-heading">Meeting Agenda</div>
+                        <div class="block-text">
+                            1. Project status update<br>
+                            2. Technical challenges discussion<br>
+                            3. Next sprint planning<br>
+                            4. Resource allocation
+                        </div>
+                    </div>
+                    <div class="block">
+                        <div class="block-heading">Action Items</div>
+                        <div class="block-text">
+                            • Complete API documentation by Friday<br>
+                            • Set up monitoring dashboard<br>
+                            • Review security audit findings<br>
+                            • Schedule team training session
+                        </div>
+                    </div>
+                `
+            };
+
+            return contentTemplates[title] || `
+                <div class="block">
+                    <div class="block-heading">${title}</div>
+                    <div class="block-text">
+                        This page contains information about ${title.toLowerCase()}. Use the edit button to modify the content.
+                    </div>
+                </div>
+            `;
+        }
+
+        // Open database
+        function openDatabase(db) {
+            showNotification(`Opening database: ${db.title}`, 'success');
+            // In a real implementation, this would open the database view
+        }
+
+        // Refresh data
+        function refreshData() {
+            showNotification('Refreshing data...', 'success');
+            loadPages();
+            loadDatabases();
+        }
+
+        // Create new page
+        function createPage() {
+            const title = prompt('Enter page title:');
+            if (title) {
+                const newPage = {
+                    id: Date.now().toString(),
+                    title: title,
+                    created: 'Just now',
+                    url: '#'
+                };
+                pages.unshift(newPage);
+                renderPageList();
+                selectPage(newPage);
+                showNotification('Page created successfully', 'success');
+            }
+        }
+
+        // Edit page
+        function editPage() {
+            if (currentPage) {
+                showNotification('Edit mode activated', 'success');
+                // In a real implementation, this would enable editing
+            }
+        }
+
+        // Share page
+        function sharePage() {
+            if (currentPage) {
+                const url = window.location.origin + '/notion/page/' + currentPage.id;
+                navigator.clipboard.writeText(url).then(() => {
+                    showNotification('Page URL copied to clipboard', 'success');
+                });
+            }
+        }
+
+        // Search Notion
+        function searchNotion() {
+            const query = prompt('Enter search query:');
+            if (query) {
+                showNotification(`Searching for: ${query}`, 'success');
+                // In a real implementation, this would perform the search
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Page search
+            document.getElementById('page-search').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const pageItems = document.querySelectorAll('.page-item');
+                
+                pageItems.forEach(item => {
+                    const title = item.querySelector('.page-title').textContent.toLowerCase();
+                    if (title.includes(query)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initWorkspace);
+    </script>
+</body>
+</html>

@@ -1,108 +1,20 @@
-#!/usr/bin/env zx
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { 
-  CallToolRequestSchema, 
-  ListToolsRequestSchema
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { createServer } from 'http';
-import { URL } from 'url';
 import express from 'express';
 import path from 'path';
+import { z } from 'zod';
+import { executeTool, getAllTools, toolRegistry } from './tools/index.js';
+import { coolRouter, startCoolSockets, registerCoolMcp } from './plugins/fun/index.js';
 
-// Import all tools
-import { gcpTools } from './tools/gcp.js';
-import { firebaseTools } from './tools/firebase.js';
-import { firestoreTools } from './tools/firestore.js';
-import { bigqueryTools } from './tools/bigquery.js';
-import { healthTools } from './tools/health.js';
-import { actionsTools } from './tools/actions.js';
-import { secretsTools } from './tools/secrets.js';
-import { authTools } from './tools/auth.js';
-
-// Guardrail verifier
-import { canRun } from './tools/guard.js';
-
-// Fun features
-import { coolRouter, startCoolSockets, registerCoolMcp } from '../plugins/fun/index.js';
-
-// Configuration
-const PORT = process.env.PORT || 8080;
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
-const ALLOWED_ORIGINS = process.env.VITE_ALLOWED_ORIGINS?.split(',') || ['https://agile-anagram-469914-e2.web.app'];
-
-// MCP Configuration
-const MCP_ACTION_CURSOR_DISPATCH = process.env.MCP_ACTION_CURSOR_DISPATCH || 'cursor.dispatch';
-const MCP_ENV_TAG = process.env.MCP_ENV_TAG || 'mcpmaster';
-
-// Logging utility
-function log(level: string, message: string, meta?: any) {
-  const timestamp = new Date().toISOString();
-  const logEntry = {
-    timestamp,
-    level,
-    message,
-    ...meta
-  };
-  
-  if (level === 'error') {
-    console.error(JSON.stringify(logEntry));
-  } else if (level === 'warn') {
-    console.warn(JSON.stringify(logEntry));
-  } else if (level === 'info' && LOG_LEVEL !== 'warn') {
-    console.log(JSON.stringify(logEntry));
-  } else if (level === 'debug' && LOG_LEVEL === 'debug') {
-    console.log(JSON.stringify(logEntry));
-  }
-}
-
-// Rate limiting
-const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
-const RATE_LIMIT_RPS = parseInt(process.env.RATE_LIMIT_RPS || '5');
-const RATE_LIMIT_BURST = parseInt(process.env.RATE_LIMIT_BURST || '10');
-
-function checkRateLimit(identifier: string): boolean {
-  const now = Date.now();
-  const window = 1000; // 1 second window
-  
-  if (!rateLimitMap.has(identifier)) {
-    rateLimitMap.set(identifier, { count: 1, resetTime: now + window });
-    return true;
-  }
-  
-  const limit = rateLimitMap.get(identifier)!;
-  
-  if (now > limit.resetTime) {
-    limit.count = 1;
-    limit.resetTime = now + window;
-    return true;
-  }
-  
-  if (limit.count >= RATE_LIMIT_BURST) {
-    return false;
-  }
-  
-  limit.count++;
-  return true;
-}
-
-// Combine all tools
-const allTools = [
-  ...gcpTools,
-  ...firebaseTools,
-  ...firestoreTools,
-  ...bigqueryTools,
-  ...healthTools,
-  ...actionsTools,
-  ...secretsTools,
-  ...authTools
-];
-
-// Create MCP server
+// MCP Server Configuration
 const server = new Server(
   {
-    name: `edenos-mcp-bridge-${MCP_ENV_TAG}`,
+    name: 'edenos-mcp-bridge',
     version: '1.0.0',
   },
   {
@@ -112,373 +24,361 @@ const server = new Server(
   }
 );
 
-// List tools
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  log('info', 'Tools list requested');
-  return {
-    tools: allTools,
-  };
+// Express app for HTTP endpoints
+const app = express();
+app.use(express.json());
+app.use(express.static(path.join(process.cwd(), 'web')));
+
+// Admin guard middleware
+const adminGuard = (req: any, res: any, next: any) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const adminToken = process.env.BRIDGE_ADMIN_TOKEN;
+  
+  if (req.path.startsWith('/cool') && token !== adminToken) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  next();
+};
+
+app.use(adminGuard);
+
+// Mount fun features
+app.use('/cool', coolRouter);
+
+// Serve static UIs
+app.use('/live-ops', express.static(path.join(process.cwd(), 'web/live-ops')));
+app.use('/memgraph', express.static(path.join(process.cwd(), 'web/memgraph')));
+app.use('/audit-cinema', express.static(path.join(process.cwd(), 'web/audit-cinema')));
+
+// Health endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    features: ['notion', 'linear', 'fun-features']
+  });
 });
 
-// Execute tools with guardrails
+// Metrics endpoint
+app.get('/metrics', (req, res) => {
+  res.json({
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    timestamp: new Date().toISOString(),
+    tools: getAllTools().length,
+    services: ['notion', 'linear']
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    name: 'EdenOS MCP Bridge',
+    version: '1.0.0',
+    description: 'AI-powered MCP bridge with Notion, Linear, and fun features',
+    endpoints: {
+      health: '/health',
+      metrics: '/metrics',
+      tools: '/tools',
+      logs: '/logs',
+      fun: '/cool',
+      liveOps: '/live-ops',
+      memgraph: '/memgraph',
+      auditCinema: '/audit-cinema'
+    },
+    features: {
+      notion: 'Notion workspace integration',
+      linear: 'Linear project management',
+      fun: 'Cool features for normal people',
+      controlPanel: 'React control panel',
+      wowControl: 'Sci-fi features that make people gasp'
+    }
+  });
+});
+
+// Tools endpoint
+app.post('/tools', async (req, res) => {
+  try {
+    const { tool, args, dryRun } = req.body;
+    
+    if (!tool) {
+      return res.status(400).json({ error: 'Tool name is required' });
+    }
+
+    if (dryRun) {
+      return res.json({ 
+        tool, 
+        args, 
+        dryRun: true, 
+        message: 'Dry run - no actual execution',
+        wouldExecute: true
+      });
+    }
+
+    const result = await executeTool(tool, args || {}, {
+      notion: {
+        apiKey: process.env.NOTION_API_KEY || 'demo-key',
+        version: '2022-06-28'
+      },
+      linear: {
+        apiKey: process.env.LINEAR_API_KEY || 'demo-key'
+      }
+    });
+
+    res.json({ tool, args, result });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      tool: req.body.tool
+    });
+  }
+});
+
+// Logs endpoint
+app.get('/logs', (req, res) => {
+  const limit = parseInt(req.query.limit as string) || 100;
+  
+  // Mock logs for demo
+  const logs = [
+    `[${new Date().toISOString()}] EdenOS MCP Bridge started`,
+    `[${new Date().toISOString()}] Notion integration loaded`,
+    `[${new Date().toISOString()}] Linear integration loaded`,
+    `[${new Date().toISOString()}] Fun features activated`,
+    `[${new Date().toISOString()}] Control panel ready`,
+    `[${new Date().toISOString()}] Wow control center online`
+  ];
+
+  res.json({ lines: logs.slice(-limit) });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// MCP Tool definitions
+const tools: Tool[] = [
+  // Notion tools
+  {
+    name: 'notion.get-page',
+    description: 'Get a Notion page by ID',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        pageId: { type: 'string', description: 'The ID of the page to retrieve' }
+      },
+      required: ['pageId']
+    }
+  },
+  {
+    name: 'notion.get-database',
+    description: 'Get a Notion database by ID',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        databaseId: { type: 'string', description: 'The ID of the database to retrieve' }
+      },
+      required: ['databaseId']
+    }
+  },
+  {
+    name: 'notion.query-database',
+    description: 'Query a Notion database with filters and sorts',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        databaseId: { type: 'string', description: 'The ID of the database to query' },
+        filter: { type: 'object', description: 'Filter criteria for the query' },
+        sorts: { type: 'array', description: 'Sort criteria for the query' },
+        pageSize: { type: 'number', description: 'Number of results to return' }
+      },
+      required: ['databaseId']
+    }
+  },
+  {
+    name: 'notion.create-page',
+    description: 'Create a new Notion page',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        parent: { type: 'object', description: 'Parent database or page ID' },
+        properties: { type: 'object', description: 'Properties for the new page' }
+      },
+      required: ['parent', 'properties']
+    }
+  },
+  {
+    name: 'notion.update-page',
+    description: 'Update an existing Notion page',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        pageId: { type: 'string', description: 'The ID of the page to update' },
+        properties: { type: 'object', description: 'Properties to update' }
+      },
+      required: ['pageId', 'properties']
+    }
+  },
+  {
+    name: 'notion.search',
+    description: 'Search across Notion pages and databases',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query' },
+        filter: { type: 'object', description: 'Filter criteria for the search' },
+        pageSize: { type: 'number', description: 'Number of results to return' }
+      },
+      required: ['query']
+    }
+  },
+  // Linear tools
+  {
+    name: 'linear.get-issue',
+    description: 'Get a Linear issue by ID',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        issueId: { type: 'string', description: 'The ID of the issue to retrieve' }
+      },
+      required: ['issueId']
+    }
+  },
+  {
+    name: 'linear.get-issues',
+    description: 'Get Linear issues with optional filters',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        teamId: { type: 'string', description: 'Filter by team ID' },
+        state: { type: 'string', description: 'Filter by state name' },
+        assigneeId: { type: 'string', description: 'Filter by assignee ID' },
+        limit: { type: 'number', description: 'Maximum number of issues to return' }
+      }
+    }
+  },
+  {
+    name: 'linear.create-issue',
+    description: 'Create a new Linear issue',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        teamId: { type: 'string', description: 'ID of the team to create the issue in' },
+        title: { type: 'string', description: 'Title of the issue' },
+        description: { type: 'string', description: 'Description of the issue' },
+        stateId: { type: 'string', description: 'ID of the state to set' },
+        assigneeId: { type: 'string', description: 'ID of the assignee' },
+        projectId: { type: 'string', description: 'ID of the project' },
+        priority: { type: 'number', description: 'Priority of the issue (0-4)' }
+      },
+      required: ['teamId', 'title']
+    }
+  },
+  {
+    name: 'linear.update-issue',
+    description: 'Update an existing Linear issue',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        issueId: { type: 'string', description: 'ID of the issue to update' },
+        title: { type: 'string', description: 'New title for the issue' },
+        description: { type: 'string', description: 'New description for the issue' },
+        stateId: { type: 'string', description: 'New state ID for the issue' },
+        assigneeId: { type: 'string', description: 'New assignee ID for the issue' },
+        projectId: { type: 'string', description: 'New project ID for the issue' },
+        priority: { type: 'number', description: 'New priority for the issue (0-4)' }
+      },
+      required: ['issueId']
+    }
+  },
+  {
+    name: 'linear.get-projects',
+    description: 'Get Linear projects with optional filters',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        teamId: { type: 'string', description: 'Filter by team ID' },
+        state: { type: 'string', description: 'Filter by project state' },
+        limit: { type: 'number', description: 'Maximum number of projects to return' }
+      }
+    }
+  },
+  {
+    name: 'linear.search-issues',
+    description: 'Search Linear issues',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query' },
+        teamId: { type: 'string', description: 'Filter by team ID' },
+        limit: { type: 'number', description: 'Maximum number of results to return' }
+      },
+      required: ['query']
+    }
+  }
+];
+
+// MCP Tool handlers
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools };
+});
+
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-  
-  // Rate limiting
-  if (!checkRateLimit(`tool:${name}`)) {
-    log('warn', 'Rate limit exceeded', { tool: name });
-    throw new Error(`Rate limit exceeded for tool ${name}`);
-  }
-  
-  log('info', 'Tool execution requested', { tool: name, args });
-  
-  // Check guardrails
-  const now = new Date();
-  const hour = now.getHours();
-  const context = { hour, branch: process.env.GITHUB_REF };
-  
-  if (!canRun(name, context)) {
-    log('warn', 'Tool blocked by guardrails', { tool: name, context });
-    throw new Error(`Tool ${name} blocked by guardrails: outside working hours or missing release branch`);
-  }
-  
-  // Find and execute tool
-  const tool = allTools.find(t => t.name === name);
-  if (!tool) {
-    log('error', 'Tool not found', { tool: name });
-    throw new Error(`Tool ${name} not found`);
-  }
-  
+
   try {
-    // Execute tool based on name
-    let result;
-    
-    if (name.startsWith('gcp.')) {
-      result = await executeGcpTool(name, args);
-    } else if (name.startsWith('firebase.')) {
-      result = await executeFirebaseTool(name, args);
-    } else if (name.startsWith('firestore.')) {
-      result = await executeFirestoreTool(name, args);
-    } else if (name.startsWith('bigquery.')) {
-      result = await executeBigQueryTool(name, args);
-    } else if (name.startsWith('health.')) {
-      result = await executeHealthTool(name, args);
-    } else if (name.startsWith('actions.')) {
-      result = await executeActionsTool(name, args);
-    } else if (name.startsWith('secrets.')) {
-      result = await executeSecretsTool(name, args);
-    } else if (name.startsWith('auth.')) {
-      result = await executeAuthTool(name, args);
-    } else {
-      throw new Error(`Unknown tool category: ${name}`);
-    }
-    
-    log('info', 'Tool execution successful', { tool: name });
-    
+    const result = await executeTool(name, args || {}, {
+      notion: {
+        apiKey: process.env.NOTION_API_KEY || 'demo-key',
+        version: '2022-06-28'
+      },
+      linear: {
+        apiKey: process.env.LINEAR_API_KEY || 'demo-key'
+      }
+    });
+
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(result, null, 2),
-        },
-      ],
+          text: JSON.stringify(result, null, 2)
+        }
+      ]
     };
   } catch (error) {
-    log('error', 'Tool execution failed', { tool: name, error: error instanceof Error ? error.message : 'Unknown error' });
-    throw new Error(`Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        }
+      ],
+      isError: true
+    };
   }
 });
 
-// Tool execution functions (implemented in respective tool files)
-async function executeGcpTool(name: string, args: any) {
-  const { gcpTools } = await import('./tools/gcp.js');
-  
-  switch (name) {
-    case 'gcp.run.status':
-      return await import('./tools/gcp.js').then(m => m.executeRunStatus(args));
-    case 'gcp.run.restart':
-      return await import('./tools/gcp.js').then(m => m.executeRunRestart(args));
-    case 'gcp.run.rollback':
-      return await import('./tools/gcp.js').then(m => m.executeRunRollback(args));
-    case 'gcp.pubsub.publish':
-      return await import('./tools/gcp.js').then(m => m.executePubSubPublish(args));
-    case 'gcp.scheduler.trigger':
-      return await import('./tools/gcp.js').then(m => m.executeSchedulerTrigger(args));
-    case 'gcp.tasks.create':
-      return await import('./tools/gcp.js').then(m => m.executeTasksCreate(args));
-    default:
-      throw new Error(`Unknown GCP tool: ${name}`);
-  }
-}
-
-async function executeFirebaseTool(name: string, args: any) {
-  switch (name) {
-    case 'firebase.hosting.deploy':
-      return await import('./tools/firebase.js').then(m => m.executeHostingDeploy(args));
-    case 'firebase.hosting.status':
-      return await import('./tools/firebase.js').then(m => m.executeHostingStatus(args));
-    case 'firebase.hosting.rollback':
-      return await import('./tools/firebase.js').then(m => m.executeHostingRollback(args));
-    case 'firebase.functions.deploy':
-      return await import('./tools/firebase.js').then(m => m.executeFunctionsDeploy(args));
-    case 'firebase.functions.status':
-      return await import('./tools/firebase.js').then(m => m.executeFunctionsStatus(args));
-    case 'firebase.app.config':
-      return await import('./tools/firebase.js').then(m => m.executeAppConfig(args));
-    default:
-      throw new Error(`Unknown Firebase tool: ${name}`);
-  }
-}
-
-async function executeFirestoreTool(name: string, args: any) {
-  switch (name) {
-    case 'firestore.query':
-      return await import('./tools/firestore.js').then(m => m.executeQuery(args));
-    case 'firestore.write':
-      return await import('./tools/firestore.js').then(m => m.executeWrite(args));
-    case 'firestore.delete':
-      return await import('./tools/firestore.js').then(m => m.executeDelete(args));
-    case 'firestore.backup':
-      return await import('./tools/firestore.js').then(m => m.executeBackup(args));
-    case 'firestore.restore':
-      return await import('./tools/firestore.js').then(m => m.executeRestore(args));
-    default:
-      throw new Error(`Unknown Firestore tool: ${name}`);
-  }
-}
-
-async function executeBigQueryTool(name: string, args: any) {
-  switch (name) {
-    case 'bigquery.query':
-      return await import('./tools/bigquery.js').then(m => m.executeQuery(args));
-    case 'bigquery.dataset.create':
-      return await import('./tools/bigquery.js').then(m => m.executeDatasetCreate(args));
-    case 'bigquery.table.create':
-      return await import('./tools/bigquery.js').then(m => m.executeTableCreate(args));
-    case 'bigquery.view.create':
-      return await import('./tools/bigquery.js').then(m => m.executeViewCreate(args));
-    case 'bigquery.export':
-      return await import('./tools/bigquery.js').then(m => m.executeExport(args));
-    default:
-      throw new Error(`Unknown BigQuery tool: ${name}`);
-  }
-}
-
-async function executeHealthTool(name: string, args: any) {
-  switch (name) {
-    case 'health.smoke':
-      return await import('./tools/health.js').then(m => m.executeSmoke(args));
-    case 'health.check':
-      return await import('./tools/health.js').then(m => m.executeHealthCheck(args));
-    default:
-      throw new Error(`Unknown Health tool: ${name}`);
-  }
-}
-
-async function executeActionsTool(name: string, args: any) {
-  switch (name) {
-    case 'actions.workflow.run':
-      return await import('./tools/actions.js').then(m => m.executeWorkflowRun(args));
-    case 'actions.workflow.status':
-      return await import('./tools/actions.js').then(m => m.executeWorkflowStatus(args));
-    case 'actions.deploy':
-      return await import('./tools/actions.js').then(m => m.executeDeploy(args));
-    case 'actions.rollback':
-      return await import('./tools/actions.js').then(m => m.executeRollback(args));
-    case 'actions.smoke':
-      return await import('./tools/actions.js').then(m => m.executeSmoke(args));
-    default:
-      throw new Error(`Unknown Actions tool: ${name}`);
-  }
-}
-
-async function executeSecretsTool(name: string, args: any) {
-  switch (name) {
-    case 'secrets.create':
-      return await import('./tools/secrets.js').then(m => m.executeSecretCreate(args));
-    case 'secrets.get':
-      return await import('./tools/secrets.js').then(m => m.executeSecretGet(args));
-    case 'secrets.update':
-      return await import('./tools/secrets.js').then(m => m.executeSecretUpdate(args));
-    case 'secrets.delete':
-      return await import('./tools/secrets.js').then(m => m.executeSecretDelete(args));
-    case 'secrets.list':
-      return await import('./tools/secrets.js').then(m => m.executeSecretList(args));
-    case 'secrets.rotate':
-      return await import('./tools/secrets.js').then(m => m.executeSecretRotate(args));
-    default:
-      throw new Error(`Unknown Secrets tool: ${name}`);
-  }
-}
-
-async function executeAuthTool(name: string, args: any) {
-  switch (name) {
-    case 'auth.login':
-      return await import('./tools/auth.js').then(m => m.executeLogin(args));
-    case 'auth.logout':
-      return await import('./tools/auth.js').then(m => m.executeLogout(args));
-    case 'auth.status':
-      return await import('./tools/auth.js').then(m => m.executeStatus(args));
-    case 'auth.token':
-      return await import('./tools/auth.js').then(m => m.executeToken(args));
-    case 'auth.config':
-      return await import('./tools/auth.js').then(m => m.executeConfig(args));
-    default:
-      throw new Error(`Unknown Auth tool: ${name}`);
-  }
-}
-
-// HTTP server for health checks and metrics
-function createHttpServer() {
-  const app = express();
-  
-  // Middleware
-  app.use(express.json());
-  app.use(express.static(path.join(__dirname, '../web')));
-  
-  // CORS headers
-  app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && ALLOWED_ORIGINS.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    
-    if (req.method === 'OPTIONS') {
-      res.writeHead(200);
-      res.end();
-      return;
-    }
-    next();
-  });
-  
-  // Admin guard for fun features
-  app.use("/cool", (req, res, next) => {
-    const token = (req.headers.authorization || "").replace("Bearer ", "");
-    if (token !== process.env.BRIDGE_ADMIN_TOKEN) {
-      return res.status(401).json({ error: "unauthorized" });
-    }
-    next();
-  });
-  
-  // Mount fun features
-  app.use("/cool", coolRouter);
-  
-  // Static UIs
-  app.use("/live-ops", express.static(path.join(__dirname, "../web/live-ops")));
-  app.use("/memgraph", express.static(path.join(__dirname, "../web/memgraph")));
-  app.use("/audit-cinema", express.static(path.join(__dirname, "../web/audit-cinema")));
-  
-  // Health check endpoint
-  app.get('/health', (req, res) => {
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      tools: allTools.length
-    });
-  });
-  
-  // Metrics endpoint
-  app.get('/metrics', (req, res) => {
-    res.set('Content-Type', 'text/plain');
-    res.end(`# EdenOS MCP Bridge Metrics
-# HELP mcp_tools_total Total number of available tools
-# TYPE mcp_tools_total gauge
-mcp_tools_total ${allTools.length}
-
-# HELP mcp_rate_limit_hits_total Total rate limit hits
-# TYPE mcp_rate_limit_hits_total counter
-mcp_rate_limit_hits_total ${Array.from(rateLimitMap.values()).reduce((sum, limit) => sum + limit.count, 0)}
-`);
-  });
-  
-  // Root endpoint
-  app.get('/', (req, res) => {
-    res.json({
-      name: `EdenOS MCP Bridge (${MCP_ENV_TAG})`,
-      version: '1.0.0',
-      status: 'running',
-      mcp: {
-        actionCursorDispatch: MCP_ACTION_CURSOR_DISPATCH,
-        envTag: MCP_ENV_TAG
-      },
-      endpoints: {
-        health: '/health',
-        metrics: '/metrics',
-        tools: '/tools',
-        fun: '/cool',
-        liveOps: '/live-ops',
-        memgraph: '/memgraph',
-        auditCinema: '/audit-cinema'
-      }
-    });
-  });
-  
-  // 404 for unknown paths
-  app.use('*', (req, res) => {
-    res.status(404).json({ error: 'Not found' });
-  });
-  
-  return app;
-}
-
-// Start server
+// Start the server
 async function main() {
-  try {
-    log('info', 'Starting EdenOS MCP Bridge', { 
-      mcpActionCursorDispatch: MCP_ACTION_CURSOR_DISPATCH,
-      mcpEnvTag: MCP_ENV_TAG,
-      port: PORT,
-      logLevel: LOG_LEVEL
-    });
-    
-    // Create Express app
-    const app = createHttpServer();
-    
-    // Start HTTP server for health checks and fun features
-    const httpServer = app.listen(PORT, () => {
-      log('info', `HTTP server listening on port ${PORT}`);
-    });
-    
-    // Start fun websockets
-    startCoolSockets(httpServer);
-    
-    // Register fun MCP tools
-    registerCoolMcp(server);
-    
-    // Start MCP server
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    
-    log('info', 'EdenOS MCP Bridge started successfully with fun features');
-    
-    // Graceful shutdown
-    process.on('SIGTERM', () => {
-      log('info', 'Received SIGTERM, shutting down gracefully');
-      httpServer.close(() => {
-        log('info', 'HTTP server closed');
-        process.exit(0);
-      });
-    });
-    
-    process.on('SIGINT', () => {
-      log('info', 'Received SIGINT, shutting down gracefully');
-      httpServer.close(() => {
-        log('info', 'HTTP server closed');
-        process.exit(0);
-      });
-    });
-    
-  } catch (error) {
-    log('error', 'Failed to start EdenOS MCP Bridge', { error: error instanceof Error ? error.message : 'Unknown error' });
-    process.exit(1);
-  }
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+
+  // Start Express server
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`EdenOS MCP Bridge running on port ${port}`);
+    console.log(`Health check: http://localhost:${port}/health`);
+    console.log(`Control panel: http://localhost:${port}/control-panel`);
+    console.log(`Wow control: http://localhost:${port}/wow-control`);
+  });
+
+  // Start fun features
+  startCoolSockets();
+  registerCoolMcp();
+
+  console.log('EdenOS MCP Bridge with Notion, Linear, and Fun Features ready!');
 }
 
-main().catch((error) => {
-  log('error', 'Unhandled error in main', { error: error instanceof Error ? error.message : 'Unknown error' });
-  process.exit(1);
-});
+main().catch(console.error);

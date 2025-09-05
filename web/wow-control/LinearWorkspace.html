@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdenOS Linear Workspace - AI-Powered Project Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #0a0f18 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .linear-workspace {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 200, 255, 0.1) 0%, transparent 50%);
+        }
+
+        .workspace-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #00ff88;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ff88;
+        }
+
+        .header-subtitle {
+            font-size: 1rem;
+            color: #88ffaa;
+            opacity: 0.8;
+        }
+
+        .workspace-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.7);
+            border-right: 2px solid #00ff88;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .team-selector {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .team-selector:hover {
+            background: rgba(0, 255, 136, 0.2);
+        }
+
+        .team-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .team-key {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-button {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-button:hover {
+            background: rgba(0, 255, 136, 0.2);
+        }
+
+        .filter-button.active {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: #88ffaa;
+        }
+
+        .issue-list {
+            list-style: none;
+        }
+
+        .issue-item {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .issue-item:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+
+        .issue-item.high-priority {
+            border-left: 4px solid #ff4444;
+        }
+
+        .issue-item.medium-priority {
+            border-left: 4px solid #ffaa00;
+        }
+
+        .issue-item.low-priority {
+            border-left: 4px solid #00ff88;
+        }
+
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .issue-id {
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .issue-priority {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: rgba(0, 255, 136, 0.2);
+        }
+
+        .issue-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .issue-meta {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            opacity: 0.7;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .content-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid #00ff88;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: scale(1.05);
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .issue-detail {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .issue-header-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .issue-title-detail {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .issue-status {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .issue-description {
+            line-height: 1.6;
+            color: #e5e7eb;
+            margin-bottom: 20px;
+        }
+
+        .issue-properties {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .property {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .property-label {
+            font-size: 0.8rem;
+            color: #88ffaa;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .property-value {
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .project-card {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .project-card:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .project-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #00ff88;
+        }
+
+        .project-description {
+            font-size: 0.9rem;
+            color: #88ffaa;
+            margin-bottom: 15px;
+        }
+
+        .project-progress {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            height: 8px;
+            margin-bottom: 10px;
+        }
+
+        .project-progress-bar {
+            background: linear-gradient(90deg, #00ff88, #88ffaa);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .project-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #88ffaa;
+        }
+
+        .search-bar {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #88ffaa;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #374151;
+            border-radius: 50%;
+            border-top-color: #00ff88;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            color: #00ff88;
+            font-size: 0.9rem;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .notification.success {
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6b7280;
+            padding: 40px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="linear-workspace">
+        <div class="workspace-header">
+            <div>
+                <div class="header-title">EDENOS LINEAR WORKSPACE</div>
+                <div class="header-subtitle">AI-Powered Project Management</div>
+            </div>
+            <div class="content-actions">
+                <button class="action-button" onclick="refreshData()">Refresh</button>
+                <button class="action-button" onclick="createIssue()">New Issue</button>
+                <button class="action-button" onclick="createProject()">New Project</button>
+            </div>
+        </div>
+
+        <div class="workspace-content">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="section-title">Team</div>
+                    <div class="team-selector" id="team-selector">
+                        <div class="team-name">EdenOS Development</div>
+                        <div class="team-key">EDN</div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title">Filters</div>
+                    <div class="filter-section">
+                        <button class="filter-button active" onclick="filterIssues('all')">All</button>
+                        <button class="filter-button" onclick="filterIssues('todo')">Todo</button>
+                        <button class="filter-button" onclick="filterIssues('in-progress')">In Progress</button>
+                        <button class="filter-button" onclick="filterIssues('done')">Done</button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title">Issues</div>
+                    <input type="text" class="search-bar" placeholder="Search issues..." id="issue-search">
+                    <ul class="issue-list" id="issue-list">
+                        <li class="issue-item high-priority" onclick="selectIssue('1')">
+                            <div class="issue-header">
+                                <span class="issue-id">EDN-123</span>
+                                <span class="issue-priority">High</span>
+                            </div>
+                            <div class="issue-title">Implement user authentication</div>
+                            <div class="issue-meta">Assigned to John • 2 days ago</div>
+                        </li>
+                        <li class="issue-item medium-priority" onclick="selectIssue('2')">
+                            <div class="issue-header">
+                                <span class="issue-id">EDN-124</span>
+                                <span class="issue-priority">Medium</span>
+                            </div>
+                            <div class="issue-title">Add data validation</div>
+                            <div class="issue-meta">Assigned to Sarah • 1 day ago</div>
+                        </li>
+                        <li class="issue-item low-priority" onclick="selectIssue('3')">
+                            <div class="issue-header">
+                                <span class="issue-id">EDN-125</span>
+                                <span class="issue-priority">Low</span>
+                            </div>
+                            <div class="issue-title">Update documentation</div>
+                            <div class="issue-meta">Unassigned • 3 days ago</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-header">
+                    <div class="content-title" id="content-title">Linear Workspace</div>
+                    <div class="content-actions">
+                        <button class="action-button" onclick="editIssue()">Edit</button>
+                        <button class="action-button" onclick="assignIssue()">Assign</button>
+                        <button class="action-button" onclick="closeIssue()">Close</button>
+                    </div>
+                </div>
+
+                <div class="content-body">
+                    <div class="issue-detail" id="issue-detail">
+                        <div class="issue-header-detail">
+                            <div class="issue-title-detail">EDN-123: Implement user authentication</div>
+                            <div class="issue-status">In Progress</div>
+                        </div>
+                        
+                        <div class="issue-description">
+                            Implement a robust user authentication system with JWT tokens, password hashing, and session management. This should include user registration, login, logout, and password reset functionality.
+                        </div>
+
+                        <div class="issue-properties">
+                            <div class="property">
+                                <div class="property-label">Priority</div>
+                                <div class="property-value">High</div>
+                            </div>
+                            <div class="property">
+                                <div class="property-label">Assignee</div>
+                                <div class="property-value">John Doe</div>
+                            </div>
+                            <div class="property">
+                                <div class="property-label">Status</div>
+                                <div class="property-value">In Progress</div>
+                            </div>
+                            <div class="property">
+                                <div class="property-label">Project</div>
+                                <div class="property-value">EdenOS Core</div>
+                            </div>
+                            <div class="property">
+                                <div class="property-label">Created</div>
+                                <div class="property-value">2 days ago</div>
+                            </div>
+                            <div class="property">
+                                <div class="property-label">Updated</div>
+                                <div class="property-value">1 hour ago</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="project-grid" id="project-grid" style="display: none;">
+                        <div class="project-card" onclick="selectProject('1')">
+                            <div class="project-title">EdenOS Core</div>
+                            <div class="project-description">Core functionality and API development</div>
+                            <div class="project-progress">
+                                <div class="project-progress-bar" style="width: 75%;"></div>
+                            </div>
+                            <div class="project-meta">
+                                <span>75% complete</span>
+                                <span>12 issues</span>
+                            </div>
+                        </div>
+                        <div class="project-card" onclick="selectProject('2')">
+                            <div class="project-title">UI/UX Design</div>
+                            <div class="project-description">User interface and experience design</div>
+                            <div class="project-progress">
+                                <div class="project-progress-bar" style="width: 45%;"></div>
+                            </div>
+                            <div class="project-meta">
+                                <span>45% complete</span>
+                                <span>8 issues</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script>
+        let currentIssue = null;
+        let currentProject = null;
+        let issues = [];
+        let projects = [];
+        let currentFilter = 'all';
+
+        // Initialize the workspace
+        function initWorkspace() {
+            loadIssues();
+            loadProjects();
+            setupEventListeners();
+            showNotification('Linear Workspace initialized', 'success');
+        }
+
+        // Load issues from Linear
+        async function loadIssues() {
+            try {
+                // Simulate API call
+                const mockIssues = [
+                    { id: '1', identifier: 'EDN-123', title: 'Implement user authentication', priority: 'high', status: 'In Progress', assignee: 'John Doe', created: '2 days ago' },
+                    { id: '2', identifier: 'EDN-124', title: 'Add data validation', priority: 'medium', status: 'Todo', assignee: 'Sarah', created: '1 day ago' },
+                    { id: '3', identifier: 'EDN-125', title: 'Update documentation', priority: 'low', status: 'Todo', assignee: null, created: '3 days ago' },
+                    { id: '4', identifier: 'EDN-126', title: 'Fix API bugs', priority: 'high', status: 'In Progress', assignee: 'Mike', created: '1 day ago' },
+                    { id: '5', identifier: 'EDN-127', title: 'Add unit tests', priority: 'medium', status: 'Done', assignee: 'Alice', created: '1 week ago' }
+                ];
+
+                issues = mockIssues;
+                renderIssueList();
+            } catch (error) {
+                showNotification('Failed to load issues', 'error');
+            }
+        }
+
+        // Load projects from Linear
+        async function loadProjects() {
+            try {
+                // Simulate API call
+                const mockProjects = [
+                    { id: '1', name: 'EdenOS Core', description: 'Core functionality and API development', progress: 75, issues: 12 },
+                    { id: '2', name: 'UI/UX Design', description: 'User interface and experience design', progress: 45, issues: 8 },
+                    { id: '3', name: 'Testing Suite', description: 'Comprehensive testing framework', progress: 30, issues: 5 },
+                    { id: '4', name: 'Documentation', description: 'User and developer documentation', progress: 60, issues: 3 }
+                ];
+
+                projects = mockProjects;
+                renderProjectGrid();
+            } catch (error) {
+                showNotification('Failed to load projects', 'error');
+            }
+        }
+
+        // Render issue list
+        function renderIssueList() {
+            const issueList = document.getElementById('issue-list');
+            issueList.innerHTML = '';
+
+            const filteredIssues = issues.filter(issue => {
+                if (currentFilter === 'all') return true;
+                if (currentFilter === 'todo') return issue.status === 'Todo';
+                if (currentFilter === 'in-progress') return issue.status === 'In Progress';
+                if (currentFilter === 'done') return issue.status === 'Done';
+                return true;
+            });
+
+            filteredIssues.forEach(issue => {
+                const li = document.createElement('li');
+                li.className = `issue-item ${issue.priority}-priority`;
+                li.onclick = () => selectIssue(issue.id);
+                li.innerHTML = `
+                    <div class="issue-header">
+                        <span class="issue-id">${issue.identifier}</span>
+                        <span class="issue-priority">${issue.priority}</span>
+                    </div>
+                    <div class="issue-title">${issue.title}</div>
+                    <div class="issue-meta">${issue.assignee ? `Assigned to ${issue.assignee}` : 'Unassigned'} • ${issue.created}</div>
+                `;
+                issueList.appendChild(li);
+            });
+        }
+
+        // Render project grid
+        function renderProjectGrid() {
+            const projectGrid = document.getElementById('project-grid');
+            projectGrid.innerHTML = '';
+
+            projects.forEach(project => {
+                const card = document.createElement('div');
+                card.className = 'project-card';
+                card.onclick = () => selectProject(project.id);
+                card.innerHTML = `
+                    <div class="project-title">${project.name}</div>
+                    <div class="project-description">${project.description}</div>
+                    <div class="project-progress">
+                        <div class="project-progress-bar" style="width: ${project.progress}%;"></div>
+                    </div>
+                    <div class="project-meta">
+                        <span>${project.progress}% complete</span>
+                        <span>${project.issues} issues</span>
+                    </div>
+                `;
+                projectGrid.appendChild(card);
+            });
+        }
+
+        // Select an issue
+        function selectIssue(issueId) {
+            currentIssue = issues.find(issue => issue.id === issueId);
+            if (currentIssue) {
+                loadIssueDetail(currentIssue);
+                showNotification(`Selected issue: ${currentIssue.identifier}`, 'success');
+            }
+        }
+
+        // Select a project
+        function selectProject(projectId) {
+            currentProject = projects.find(project => project.id === projectId);
+            if (currentProject) {
+                showNotification(`Selected project: ${currentProject.name}`, 'success');
+            }
+        }
+
+        // Load issue detail
+        function loadIssueDetail(issue) {
+            document.getElementById('content-title').textContent = issue.identifier;
+            document.getElementById('issue-detail').innerHTML = `
+                <div class="issue-header-detail">
+                    <div class="issue-title-detail">${issue.identifier}: ${issue.title}</div>
+                    <div class="issue-status">${issue.status}</div>
+                </div>
+                
+                <div class="issue-description">
+                    This is a detailed description of the issue. In a real implementation, this would be loaded from the Linear API.
+                </div>
+
+                <div class="issue-properties">
+                    <div class="property">
+                        <div class="property-label">Priority</div>
+                        <div class="property-value">${issue.priority}</div>
+                    </div>
+                    <div class="property">
+                        <div class="property-label">Assignee</div>
+                        <div class="property-value">${issue.assignee || 'Unassigned'}</div>
+                    </div>
+                    <div class="property">
+                        <div class="property-label">Status</div>
+                        <div class="property-value">${issue.status}</div>
+                    </div>
+                    <div class="property">
+                        <div class="property-label">Project</div>
+                        <div class="property-value">EdenOS Core</div>
+                    </div>
+                    <div class="property">
+                        <div class="property-label">Created</div>
+                        <div class="property-value">${issue.created}</div>
+                    </div>
+                    <div class="property">
+                        <div class="property-label">Updated</div>
+                        <div class="property-value">1 hour ago</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Filter issues
+        function filterIssues(filter) {
+            currentFilter = filter;
+            
+            // Update active filter button
+            document.querySelectorAll('.filter-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderIssueList();
+        }
+
+        // Refresh data
+        function refreshData() {
+            showNotification('Refreshing data...', 'success');
+            loadIssues();
+            loadProjects();
+        }
+
+        // Create new issue
+        function createIssue() {
+            const title = prompt('Enter issue title:');
+            if (title) {
+                const newIssue = {
+                    id: Date.now().toString(),
+                    identifier: `EDN-${Math.floor(Math.random() * 1000)}`,
+                    title: title,
+                    priority: 'medium',
+                    status: 'Todo',
+                    assignee: null,
+                    created: 'Just now'
+                };
+                issues.unshift(newIssue);
+                renderIssueList();
+                selectIssue(newIssue.id);
+                showNotification('Issue created successfully', 'success');
+            }
+        }
+
+        // Create new project
+        function createProject() {
+            const name = prompt('Enter project name:');
+            if (name) {
+                const newProject = {
+                    id: Date.now().toString(),
+                    name: name,
+                    description: 'New project description',
+                    progress: 0,
+                    issues: 0
+                };
+                projects.unshift(newProject);
+                renderProjectGrid();
+                selectProject(newProject.id);
+                showNotification('Project created successfully', 'success');
+            }
+        }
+
+        // Edit issue
+        function editIssue() {
+            if (currentIssue) {
+                showNotification('Edit mode activated', 'success');
+                // In a real implementation, this would enable editing
+            }
+        }
+
+        // Assign issue
+        function assignIssue() {
+            if (currentIssue) {
+                const assignee = prompt('Enter assignee name:');
+                if (assignee) {
+                    currentIssue.assignee = assignee;
+                    renderIssueList();
+                    showNotification(`Issue assigned to ${assignee}`, 'success');
+                }
+            }
+        }
+
+        // Close issue
+        function closeIssue() {
+            if (currentIssue) {
+                if (confirm('Are you sure you want to close this issue?')) {
+                    currentIssue.status = 'Done';
+                    renderIssueList();
+                    showNotification('Issue closed', 'success');
+                }
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Issue search
+            document.getElementById('issue-search').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const issueItems = document.querySelectorAll('.issue-item');
+                
+                issueItems.forEach(item => {
+                    const title = item.querySelector('.issue-title').textContent.toLowerCase();
+                    if (title.includes(query)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initWorkspace);
+    </script>
+</body>
+</html>
