@@ -57,7 +57,7 @@ app.get('/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    features: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'fun-features']
+    features: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind', 'fun-features']
   });
 });
 
@@ -68,7 +68,7 @@ app.get('/metrics', (req, res) => {
     memory: process.memoryUsage(),
     timestamp: new Date().toISOString(),
     tools: getAllTools().length,
-    services: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier']
+    services: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind']
   });
 });
 
@@ -96,6 +96,11 @@ app.get('/', (req, res) => {
       gcp: 'Google Cloud Platform infrastructure',
       figma: 'Figma design management',
       zapier: 'Zapier automation workflows',
+      bnd: 'Bnd blockchain and DeFi operations',
+      saviynt: 'Saviynt identity governance',
+      anthropic: 'Anthropic AI models and services',
+      neon: 'Neon serverless Postgres database',
+      deepmind: 'DeepMind AI research and models',
       fun: 'Cool features for normal people',
       controlPanel: 'React control panel',
       wowControl: 'Sci-fi features that make people gasp'
@@ -146,6 +151,26 @@ app.post('/tools', async (req, res) => {
       },
       zapier: {
         apiKey: process.env.ZAPIER_API_KEY || 'demo-key'
+      },
+      bnd: {
+        apiKey: process.env.BND_API_KEY || 'demo-key',
+        network: process.env.BND_NETWORK || 'mainnet'
+      },
+      saviynt: {
+        apiKey: process.env.SAVIYNT_API_KEY || 'demo-key',
+        tenantId: process.env.SAVIYNT_TENANT_ID || 'demo-tenant'
+      },
+      anthropic: {
+        apiKey: process.env.ANTHROPIC_API_KEY || 'demo-key',
+        model: process.env.ANTHROPIC_MODEL || 'claude-3-sonnet-20240229'
+      },
+      neon: {
+        apiKey: process.env.NEON_API_KEY || 'demo-key',
+        projectId: process.env.NEON_PROJECT_ID || 'demo-project'
+      },
+      deepmind: {
+        apiKey: process.env.DEEPMIND_API_KEY || 'demo-key',
+        projectId: process.env.DEEPMIND_PROJECT_ID || 'demo-project'
       }
     });
 
@@ -507,6 +532,193 @@ const tools: Tool[] = [
         status: { type: 'string', enum: ['on', 'off'], description: 'New status' }
       },
       required: ['zapId']
+    }
+  },
+  // Bnd tools
+  {
+    name: 'bnd.get-account-balance',
+    description: 'Get account balance',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        address: { type: 'string', description: 'Account address' }
+      },
+      required: ['address']
+    }
+  },
+  {
+    name: 'bnd.get-transaction',
+    description: 'Get transaction by hash',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        txHash: { type: 'string', description: 'Transaction hash' }
+      },
+      required: ['txHash']
+    }
+  },
+  {
+    name: 'bnd.send-transaction',
+    description: 'Send transaction',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from: { type: 'string', description: 'From address' },
+        to: { type: 'string', description: 'To address' },
+        value: { type: 'string', description: 'Transaction value' }
+      },
+      required: ['from', 'to', 'value']
+    }
+  },
+  // Saviynt tools
+  {
+    name: 'saviynt.get-user',
+    description: 'Get user by ID',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string', description: 'User ID' }
+      },
+      required: ['userId']
+    }
+  },
+  {
+    name: 'saviynt.create-user',
+    description: 'Create user',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        username: { type: 'string', description: 'Username' },
+        email: { type: 'string', description: 'Email address' },
+        firstName: { type: 'string', description: 'First name' },
+        lastName: { type: 'string', description: 'Last name' }
+      },
+      required: ['username', 'email', 'firstName', 'lastName']
+    }
+  },
+  {
+    name: 'saviynt.assign-role',
+    description: 'Assign role to user',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string', description: 'User ID' },
+        roleId: { type: 'string', description: 'Role ID' }
+      },
+      required: ['userId', 'roleId']
+    }
+  },
+  // Anthropic tools
+  {
+    name: 'anthropic.generate-text',
+    description: 'Generate text completion',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompt: { type: 'string', description: 'Text prompt' },
+        maxTokens: { type: 'number', description: 'Maximum tokens to generate' },
+        temperature: { type: 'number', description: 'Temperature for generation' }
+      },
+      required: ['prompt']
+    }
+  },
+  {
+    name: 'anthropic.analyze-sentiment',
+    description: 'Analyze text sentiment',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'Text to analyze' }
+      },
+      required: ['text']
+    }
+  },
+  {
+    name: 'anthropic.generate-code',
+    description: 'Generate code',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        description: { type: 'string', description: 'Code description' },
+        language: { type: 'string', description: 'Programming language' }
+      },
+      required: ['description', 'language']
+    }
+  },
+  // Neon tools
+  {
+    name: 'neon.execute-query',
+    description: 'Execute SQL query',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'SQL query' },
+        database: { type: 'string', description: 'Database name' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'neon.create-database',
+    description: 'Create database',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Database name' },
+        owner: { type: 'string', description: 'Database owner' }
+      },
+      required: ['name']
+    }
+  },
+  {
+    name: 'neon.create-table',
+    description: 'Create table',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tableName: { type: 'string', description: 'Table name' },
+        schema: { type: 'string', description: 'Table schema' },
+        database: { type: 'string', description: 'Database name' }
+      },
+      required: ['tableName', 'schema']
+    }
+  },
+  // DeepMind tools
+  {
+    name: 'deepmind.generate-text',
+    description: 'Generate text with model',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        modelId: { type: 'string', description: 'Model ID' },
+        prompt: { type: 'string', description: 'Text prompt' },
+        maxTokens: { type: 'number', description: 'Maximum tokens to generate' }
+      },
+      required: ['modelId', 'prompt']
+    }
+  },
+  {
+    name: 'deepmind.create-experiment',
+    description: 'Create experiment',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Experiment name' },
+        modelId: { type: 'string', description: 'Model ID' },
+        parameters: { type: 'object', description: 'Experiment parameters' }
+      },
+      required: ['name', 'modelId', 'parameters']
+    }
+  },
+  {
+    name: 'deepmind.get-experiments',
+    description: 'Get experiments',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Number of results per page' },
+        status: { type: 'string', description: 'Filter by status' }
+      }
     }
   }
 ];
