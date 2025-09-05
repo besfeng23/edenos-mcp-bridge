@@ -14,6 +14,7 @@ export * from './saviynt';
 export * from './anthropic';
 export * from './neon';
 export * from './deepmind';
+export * from './openai';
 
 // Tool registry for easy lookup
 export const toolRegistry = {
@@ -168,7 +169,25 @@ export const toolRegistry = {
   'deepmind.train-model': { handler: 'deepmind', description: 'Train model' },
   'deepmind.get-model-performance': { handler: 'deepmind', description: 'Get model performance' },
   'deepmind.get-research-papers': { handler: 'deepmind', description: 'Get research papers' },
-  'deepmind.get-project': { handler: 'deepmind', description: 'Get project information' }
+  'deepmind.get-project': { handler: 'deepmind', description: 'Get project information' },
+
+  // OpenAI tools
+  'openai.generate-text': { handler: 'openai', description: 'Generate text completion' },
+  'openai.generate-chat': { handler: 'openai', description: 'Generate chat completion' },
+  'openai.generate-embeddings': { handler: 'openai', description: 'Generate embeddings' },
+  'openai.get-models': { handler: 'openai', description: 'Get available models' },
+  'openai.get-model': { handler: 'openai', description: 'Get model information' },
+  'openai.create-fine-tuning-job': { handler: 'openai', description: 'Create fine-tuning job' },
+  'openai.list-fine-tuning-jobs': { handler: 'openai', description: 'List fine-tuning jobs' },
+  'openai.get-fine-tuning-job': { handler: 'openai', description: 'Get fine-tuning job' },
+  'openai.cancel-fine-tuning-job': { handler: 'openai', description: 'Cancel fine-tuning job' },
+  'openai.list-fine-tuning-events': { handler: 'openai', description: 'List fine-tuning events' },
+  'openai.create-image': { handler: 'openai', description: 'Create image' },
+  'openai.create-image-edit': { handler: 'openai', description: 'Create image edit' },
+  'openai.create-image-variation': { handler: 'openai', description: 'Create image variation' },
+  'openai.create-transcription': { handler: 'openai', description: 'Create transcription' },
+  'openai.create-translation': { handler: 'openai', description: 'Create translation' },
+  'openai.get-usage-stats': { handler: 'openai', description: 'Get usage statistics' }
 };
 
 // Configuration schemas for each service
@@ -229,6 +248,12 @@ export const serviceConfigs = {
     apiKey: { type: 'string', required: true, description: 'DeepMind API key' },
     baseUrl: { type: 'string', required: false, default: 'https://api.deepmind.com/v1', description: 'DeepMind API base URL' },
     projectId: { type: 'string', required: true, description: 'DeepMind project ID' }
+  },
+  openai: {
+    apiKey: { type: 'string', required: true, description: 'OpenAI API key' },
+    baseUrl: { type: 'string', required: false, default: 'https://api.openai.com/v1', description: 'OpenAI API base URL' },
+    organization: { type: 'string', required: false, description: 'OpenAI organization ID' },
+    defaultModel: { type: 'string', required: false, default: 'gpt-4o', description: 'Default model' }
   }
 };
 
@@ -294,6 +319,10 @@ export async function executeTool(tool: string, args: any, config: any) {
     case 'deepmind':
       const { executeDeepMindTool } = await import('./deepmind');
       return await executeDeepMindTool(tool, args, serviceConfig);
+    
+    case 'openai':
+      const { executeOpenAITool } = await import('./openai');
+      return await executeOpenAITool(tool, args, serviceConfig);
     
     default:
       throw new Error(`Unknown handler: ${handler}`);

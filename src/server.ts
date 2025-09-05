@@ -57,7 +57,7 @@ app.get('/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    features: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind', 'fun-features']
+    features: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind', 'openai', 'fun-features']
   });
 });
 
@@ -68,7 +68,7 @@ app.get('/metrics', (req, res) => {
     memory: process.memoryUsage(),
     timestamp: new Date().toISOString(),
     tools: getAllTools().length,
-    services: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind']
+    services: ['notion', 'linear', 'github', 'firebase', 'gcp', 'figma', 'zapier', 'bnd', 'saviynt', 'anthropic', 'neon', 'deepmind', 'openai']
   });
 });
 
@@ -101,6 +101,7 @@ app.get('/', (req, res) => {
       anthropic: 'Anthropic AI models and services',
       neon: 'Neon serverless Postgres database',
       deepmind: 'DeepMind AI research and models',
+      openai: 'OpenAI GPT models and services',
       fun: 'Cool features for normal people',
       controlPanel: 'React control panel',
       wowControl: 'Sci-fi features that make people gasp'
@@ -171,6 +172,11 @@ app.post('/tools', async (req, res) => {
       deepmind: {
         apiKey: process.env.DEEPMIND_API_KEY || 'demo-key',
         projectId: process.env.DEEPMIND_PROJECT_ID || 'demo-project'
+      },
+      openai: {
+        apiKey: process.env.OPENAI_API_KEY || 'demo-key',
+        organization: process.env.OPENAI_ORGANIZATION || undefined,
+        defaultModel: process.env.OPENAI_DEFAULT_MODEL || 'gpt-4o'
       }
     });
 
@@ -719,6 +725,74 @@ const tools: Tool[] = [
         limit: { type: 'number', description: 'Number of results per page' },
         status: { type: 'string', description: 'Filter by status' }
       }
+    }
+  },
+  // OpenAI tools
+  {
+    name: 'openai.generate-text',
+    description: 'Generate text completion',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompt: { type: 'string', description: 'Text prompt' },
+        model: { type: 'string', description: 'Model to use' },
+        maxTokens: { type: 'number', description: 'Maximum tokens to generate' },
+        temperature: { type: 'number', description: 'Temperature for generation' }
+      },
+      required: ['prompt']
+    }
+  },
+  {
+    name: 'openai.generate-chat',
+    description: 'Generate chat completion',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+        model: { type: 'string', description: 'Model to use' },
+        maxTokens: { type: 'number', description: 'Maximum tokens to generate' },
+        temperature: { type: 'number', description: 'Temperature for generation' }
+      },
+      required: ['messages']
+    }
+  },
+  {
+    name: 'openai.generate-embeddings',
+    description: 'Generate embeddings',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        input: { type: 'string', description: 'Text to embed' },
+        model: { type: 'string', description: 'Embedding model' }
+      },
+      required: ['input']
+    }
+  },
+  {
+    name: 'openai.create-image',
+    description: 'Create image',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompt: { type: 'string', description: 'Image prompt' },
+        n: { type: 'number', description: 'Number of images' },
+        size: { type: 'string', description: 'Image size' },
+        quality: { type: 'string', description: 'Image quality' }
+      },
+      required: ['prompt']
+    }
+  },
+  {
+    name: 'openai.create-fine-tuning-job',
+    description: 'Create fine-tuning job',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        trainingFile: { type: 'string', description: 'Training file ID' },
+        model: { type: 'string', description: 'Base model' },
+        hyperparameters: { type: 'object', description: 'Hyperparameters' }
+      },
+      required: ['trainingFile']
     }
   }
 ];
